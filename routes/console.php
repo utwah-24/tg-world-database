@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Car;
+use App\Models\Content;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
@@ -22,7 +23,7 @@ Artisan::command('cars:sync-from-folders', function () {
     $topLevelFolders = File::directories($basePath);
     $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
     $imageOrder = ['back', 'front', 'interior', 'side', 'engine'];
-    $allowedCategories = ['SUV', 'TRUCKS'];
+    $allowedCategories = ['SUV', 'TRUCKS', 'THIRD PARTY'];
     $synced = 0;
 
     foreach ($topLevelFolders as $topLevelFolder) {
@@ -82,3 +83,53 @@ Artisan::command('cars:sync-from-folders', function () {
 
     return Command::SUCCESS;
 })->purpose('Sync cars from public/TGworld folders');
+
+Artisan::command('content:sync-from-folder', function () {
+    $candidatePaths = [
+        public_path('TGworld/content'),
+        public_path('TGworld/Content'),
+    ];
+
+    $basePath = collect($candidatePaths)->first(fn (string $path): bool => File::isDirectory($path));
+
+    if (! $basePath) {
+        $this->error('Folder not found: public/TGworld/content');
+
+        return Command::FAILURE;
+    }
+
+    $videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v'];
+    $synced = 0;
+
+    $videoFiles = collect(File::files($basePath))
+        ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), $videoExtensions, true))
+        ->sortBy(fn ($file): string => strtolower($file->getFilename()))
+        ->values();
+
+    foreach ($videoFiles as $file) {
+        $filename = $file->getFilename();
+        $relativeFolder = str_replace('\\', '/', basename($basePath));
+        $videoPath = 'TGworld/'.$relativeFolder.'/'.$filename;
+        $name = pathinfo($filename, PATHINFO_FILENAME);
+        $duration = null;
+
+        if (preg_match('/(\d{1,2}:\d{2}(?::\d{2})?)/', $filename, $matches) === 1) {
+            $duration = $matches[1];
+        }
+
+        Content::updateOrCreate(
+            ['content_video' => $videoPath],
+            [
+                'content_name' => $name,
+                'duration' => $duration,
+            ],
+        );
+
+        $synced++;
+        $this->line("Synced content: {$filename}");
+    }
+
+    $this->info("Done. Synced {$synced} content file(s).");
+
+    return Command::SUCCESS;
+})->purpose('Sync content videos from public/TGworld/content folder');

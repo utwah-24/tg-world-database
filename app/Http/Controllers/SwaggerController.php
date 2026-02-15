@@ -35,11 +35,11 @@ class SwaggerController extends Controller
                                 'name' => 'category',
                                 'in' => 'query',
                                 'required' => false,
-                                'description' => 'Filter cars by category (SUV or TRUCKS).',
+                                'description' => 'Filter cars by category slug (suv, trucks, or third-party).',
                                 'schema' => [
                                     'type' => 'string',
-                                    'enum' => ['SUV', 'TRUCKS'],
-                                    'example' => 'SUV',
+                                    'enum' => ['suv', 'trucks', 'third-party'],
+                                    'example' => 'third-party',
                                 ],
                             ],
                         ],
@@ -130,6 +130,32 @@ class SwaggerController extends Controller
                         ],
                     ],
                 ],
+                '/api/content' => [
+                    'get' => [
+                        'tags' => ['Content'],
+                        'summary' => 'Get all content videos',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Content list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => [
+                                                        '$ref' => '#/components/schemas/Content',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 '/api/categories' => [
                     'get' => [
                         'tags' => ['Categories'],
@@ -146,6 +172,32 @@ class SwaggerController extends Controller
                                                     'type' => 'array',
                                                     'items' => [
                                                         '$ref' => '#/components/schemas/Category',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                '/api/third-party' => [
+                    'get' => [
+                        'tags' => ['Third party'],
+                        'summary' => 'Get all third-party cars',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Third-party cars list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => [
+                                                        '$ref' => '#/components/schemas/Car',
                                                     ],
                                                 ],
                                             ],
@@ -178,7 +230,7 @@ class SwaggerController extends Controller
                             ],
                             'car_price' => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
                             'car_description' => ['type' => 'string', 'nullable' => true],
-                            'category' => ['type' => 'string', 'nullable' => true, 'example' => 'SUV'],
+                            'category' => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],
@@ -196,6 +248,17 @@ class SwaggerController extends Controller
                             'id' => ['type' => 'integer', 'example' => 1],
                             'name' => ['type' => 'string', 'example' => 'logo-dark'],
                             'path' => ['type' => 'string', 'example' => 'logo-dark.jpeg'],
+                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                        ],
+                    ],
+                    'Content' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'contentID' => ['type' => 'integer', 'example' => 1],
+                            'content_name' => ['type' => 'string', 'example' => 'launch teaser'],
+                            'content_video' => ['type' => 'string', 'example' => 'TGworld/content/launch-teaser.mp4'],
+                            'duration' => ['type' => 'string', 'nullable' => true, 'example' => '00:01:30'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],

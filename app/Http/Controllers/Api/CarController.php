@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
 
 class CarController extends Controller
 {
-    private const AVAILABLE_CATEGORIES = ['SUV', 'TRUCKS'];
+    private const CATEGORY_DEFINITIONS = [
+        ['key' => 'SUV', 'name' => 'SUV', 'slug' => 'suv'],
+        ['key' => 'TRUCKS', 'name' => 'TRUCKS', 'slug' => 'trucks'],
+        ['key' => 'THIRD PARTY', 'name' => 'Third party', 'slug' => 'third-party'],
+    ];
 
     public function index(Request $request): JsonResponse
     {
@@ -17,23 +22,22 @@ class CarController extends Controller
         $cars = Car::orderBy('car_id')->get();
 
         if ($category !== null) {
-            $normalizedCategory = strtoupper(trim((string) $category));
+            $normalizedCategory = $this->normalizeCategory((string) $category);
 
-            if (! in_array($normalizedCategory, self::AVAILABLE_CATEGORIES, true)) {
+            if ($normalizedCategory === null) {
                 return response()->json([
-                    'message' => 'Invalid category. Allowed categories are SUV and TRUCKS.',
-                    'allowed_categories' => self::AVAILABLE_CATEGORIES,
+                    'message' => 'Invalid category. Allowed categories are suv, trucks, and third-party.',
+                    'allowed_categories' => $this->categorySlugs(),
                 ], 422);
             }
 
-            $cars = $cars->filter(function (Car $car) use ($normalizedCategory): bool {
-                return $this->resolveCategoryFromPath($car->car_pic) === $normalizedCategory;
-            })->values();
+            $cars = $this->filterCarsByCategory($cars, $normalizedCategory);
         }
 
         return response()->json([
             'data' => $cars->map(function (Car $car) {
-                $car->setAttribute('category', $this->resolveCategoryFromPath($car->car_pic));
+                $categoryKey = $this->resolveCategoryFromPath($car->car_pic);
+                $car->setAttribute('category', $this->categoryNameFromKey($categoryKey));
 
                 return $car;
             }),
@@ -42,15 +46,29 @@ class CarController extends Controller
 
     public function categories(): JsonResponse
     {
-        $categories = collect(self::AVAILABLE_CATEGORIES)->map(function (string $category) {
+        $categories = collect(self::CATEGORY_DEFINITIONS)->map(function (array $category) {
             return [
-                'name' => $category,
-                'slug' => strtolower($category),
+                'name' => $category['name'],
+                'slug' => $category['slug'],
             ];
         })->values();
 
         return response()->json([
             'data' => $categories,
+        ]);
+    }
+
+    public function thirdParty(): JsonResponse
+    {
+        $cars = Car::orderBy('car_id')->get();
+        $thirdPartyCars = $this->filterCarsByCategory($cars, 'THIRD PARTY');
+
+        return response()->json([
+            'data' => $thirdPartyCars->map(function (Car $car) {
+                $car->setAttribute('category', 'Third party');
+
+                return $car;
+            }),
         ]);
     }
 
@@ -66,9 +84,17 @@ class CarController extends Controller
 
         return response()->json([
             'data' => tap($car, function (Car $resolvedCar): void {
-                $resolvedCar->setAttribute('category', $this->resolveCategoryFromPath($resolvedCar->car_pic));
+                $categoryKey = $this->resolveCategoryFromPath($resolvedCar->car_pic);
+                $resolvedCar->setAttribute('category', $this->categoryNameFromKey($categoryKey));
             }),
         ]);
+    }
+
+    private function filterCarsByCategory(Collection $cars, string $categoryKey): Collection
+    {
+        return $cars->filter(function (Car $car) use ($categoryKey): bool {
+            return $this->resolveCategoryFromPath($car->car_pic) === $categoryKey;
+        })->values();
     }
 
     private function resolveCategoryFromPath(array|string|null $carPic): ?string
@@ -88,11 +114,53 @@ class CarController extends Controller
 
             $category = strtoupper((string) $parts[1]);
 
-            if (in_array($category, self::AVAILABLE_CATEGORIES, true)) {
+            if (in_array($category, $this->categoryKeys(), true)) {
                 return $category;
             }
         }
 
         return null;
+    }
+
+    private function normalizeCategory(string $category): ?string
+    {
+        $normalized = strtolower(trim($category));
+
+        foreach (self::CATEGORY_DEFINITIONS as $definition) {
+            $key = strtolower($definition['key']);
+            $name = strtolower($definition['name']);
+            $slug = strtolower($definition['slug']);
+
+            if ($normalized === $key || $normalized === $name || $normalized === $slug) {
+                return $definition['key'];
+            }
+        }
+
+        return null;
+    }
+
+    private function categoryNameFromKey(?string $categoryKey): ?string
+    {
+        if ($categoryKey === null) {
+            return null;
+        }
+
+        foreach (self::CATEGORY_DEFINITIONS as $definition) {
+            if ($definition['key'] === $categoryKey) {
+                return $definition['name'];
+            }
+        }
+
+        return null;
+    }
+
+    private function categoryKeys(): array
+    {
+        return array_column(self::CATEGORY_DEFINITIONS, 'key');
+    }
+
+    private function categorySlugs(): array
+    {
+        return array_column(self::CATEGORY_DEFINITIONS, 'slug');
     }
 }
