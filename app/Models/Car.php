@@ -13,6 +13,7 @@ class Car extends Model
         'car_pic',
         'car_price',
         'car_description',
+        'type',
     ];
 
     protected $casts = [

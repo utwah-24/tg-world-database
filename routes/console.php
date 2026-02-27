@@ -20,62 +20,81 @@ Artisan::command('cars:sync-from-folders', function () {
         return Command::FAILURE;
     }
 
-    $topLevelFolders = File::directories($basePath);
     $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
-    $imageOrder = ['back', 'front', 'interior', 'side', 'engine'];
-    $allowedCategories = ['SUV', 'TRUCKS', 'THIRD PARTY'];
-    $synced = 0;
+    $imageOrder      = ['back', 'front', 'interior', 'side', 'engine'];
+    $typeMap         = ['SUV' => 'suv', 'TRUCKS' => 'truck', 'TRUCK' => 'truck'];
+    $synced          = 0;
 
-    foreach ($topLevelFolders as $topLevelFolder) {
-        $folderName = basename($topLevelFolder);
-        $isCategoryFolder = in_array(strtoupper($folderName), $allowedCategories, true);
+    $command = $this;
 
-        $carFolders = $isCategoryFolder ? File::directories($topLevelFolder) : [$topLevelFolder];
+    $syncCar = function (string $folder, string $relativePath, ?string $type) use (
+        $imageExtensions, $imageOrder, $command, &$synced
+    ): void {
+        $carName = basename($folder);
 
-        foreach ($carFolders as $folder) {
-            $carName = basename($folder);
-            $descriptionFile = collect(['Description.txt', 'description.txt'])
-                ->map(fn (string $fileName) => $folder.DIRECTORY_SEPARATOR.$fileName)
-                ->first(fn (string $filePath) => File::exists($filePath));
+        $descriptionFile = collect(['Description.txt', 'description.txt'])
+            ->map(fn (string $f) => $folder.DIRECTORY_SEPARATOR.$f)
+            ->first(fn (string $p) => File::exists($p));
 
-            $description = $descriptionFile ? trim((string) File::get($descriptionFile)) : null;
-            $price = null;
+        $description = $descriptionFile ? trim((string) File::get($descriptionFile)) : null;
+        $price = null;
 
-            if ($description) {
-                if (preg_match('/price\s*:\s*(.+)/i', $description, $matches) === 1) {
-                    $price = trim($matches[1]);
+        if ($description && preg_match('/price\s*:\s*(.+)/i', $description, $matches) === 1) {
+            $price = trim($matches[1]);
+        }
+
+        $imagePaths = collect(File::files($folder))
+            ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), $imageExtensions, true))
+            ->sortBy(function ($file) use ($imageOrder): array {
+                $name     = strtolower($file->getFilename());
+                $priority = collect($imageOrder)->search(fn (string $k): bool => str_contains($name, $k));
+
+                return [$priority === false ? count($imageOrder) : $priority, $name];
+            })
+            ->values()
+            ->map(fn ($file): string => $relativePath.'/'.$file->getFilename())
+            ->all();
+
+        Car::updateOrCreate(
+            ['car_name' => $carName],
+            [
+                'car_pic'         => $imagePaths ?: null,
+                'car_price'       => $price,
+                'car_description' => $description,
+                'type'            => $type,
+            ],
+        );
+
+        $synced++;
+        $command->line("Synced: {$carName}");
+    };
+
+    foreach (File::directories($basePath) as $topFolder) {
+        $topName  = basename($topFolder);
+        $topUpper = strtoupper($topName);
+
+        if ($topUpper === 'THIRD PARTY') {
+            foreach (File::directories($topFolder) as $sub) {
+                $subUpper = strtoupper(basename($sub));
+
+                if (isset($typeMap[$subUpper])) {
+                    // Third party/SUV/{car} or Third party/TRUCK/{car}
+                    foreach (File::directories($sub) as $carFolder) {
+                        $rel = 'TGworld/'.$topName.'/'.basename($sub).'/'.basename($carFolder);
+                        $syncCar($carFolder, $rel, $typeMap[$subUpper]);
+                    }
+                } else {
+                    // Car sitting directly in Third party (no sub-category)
+                    $rel = 'TGworld/'.$topName.'/'.basename($sub);
+                    $syncCar($sub, $rel, null);
                 }
             }
-
-            $imageFiles = collect(File::files($folder))
-                ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), $imageExtensions, true))
-                ->sortBy(function ($file) use ($imageOrder): array {
-                    $fileName = strtolower($file->getFilename());
-                    $priority = collect($imageOrder)->search(fn (string $keyword): bool => str_contains($fileName, $keyword));
-
-                    return [$priority === false ? count($imageOrder) : $priority, $fileName];
-                })
-                ->values();
-
-            $imagePaths = $imageFiles->map(function ($file) use ($isCategoryFolder, $folderName, $carName): string {
-                if ($isCategoryFolder) {
-                    return 'TGworld/'.str_replace('\\', '/', $folderName).'/'.str_replace('\\', '/', $carName).'/'.$file->getFilename();
-                }
-
-                return 'TGworld/'.str_replace('\\', '/', $carName).'/'.$file->getFilename();
-            })->all();
-
-            Car::updateOrCreate(
-                ['car_name' => $carName],
-                [
-                    'car_pic' => $imagePaths ?: null,
-                    'car_price' => $price,
-                    'car_description' => $description,
-                ],
-            );
-
-            $synced++;
-            $this->line("Synced: {$carName}");
+        } elseif (isset($typeMap[$topUpper])) {
+            // SUV/{car} or TRUCKS/{car}
+            foreach (File::directories($topFolder) as $carFolder) {
+                $rel = 'TGworld/'.$topName.'/'.basename($carFolder);
+                $syncCar($carFolder, $rel, $typeMap[$topUpper]);
+            }
         }
     }
 

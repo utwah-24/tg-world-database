@@ -340,6 +340,7 @@ class SwaggerController extends Controller
                             ],
                             'car_price' => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
                             'car_description' => ['type' => 'string', 'nullable' => true],
+                            'type' => ['type' => 'string', 'nullable' => true, 'enum' => ['suv', 'truck'], 'example' => 'suv'],
                             'category' => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
