@@ -286,12 +286,12 @@ class SwaggerController extends Controller
                 'schemas' => [
                     'RegisterRequest' => [
                         'type' => 'object',
-                        'required' => ['username', 'password', 'phone_number'],
+                        'required' => ['username', 'phone_number', 'password'],
                         'properties' => [
                             'username'     => ['type' => 'string', 'example' => 'john_doe'],
                             'email'        => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'john@example.com'],
-                            'password'     => ['type' => 'string', 'format' => 'password', 'minLength' => 6, 'example' => 'secret123'],
                             'phone_number' => ['type' => 'string', 'example' => '+256700000000'],
+                            'password'     => ['type' => 'string', 'format' => 'password', 'minLength' => 6, 'example' => 'secret123'],
                         ],
                     ],
                     'LoginRequest' => [
