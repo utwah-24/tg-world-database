@@ -18,7 +18,7 @@ class SwaggerController extends Controller
             'info' => [
                 'title' => 'TG World Cars API',
                 'version' => '1.0.0',
-                'description' => 'API documentation for cars, logos, and category filtering.',
+                'description' => 'API documentation for cars, logos, category filtering, and user authentication.',
             ],
             'servers' => [
                 [
@@ -26,6 +26,79 @@ class SwaggerController extends Controller
                 ],
             ],
             'paths' => [
+                '/api/auth/register' => [
+                    'post' => [
+                        'tags' => ['Auth'],
+                        'summary' => 'Create a new user account',
+                        'requestBody' => [
+                            'required' => true,
+                            'content' => [
+                                'application/json' => [
+                                    'schema' => [
+                                        '$ref' => '#/components/schemas/RegisterRequest',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'responses' => [
+                            '201' => [
+                                'description' => 'Account created successfully',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'message' => ['type' => 'string', 'example' => 'Account created successfully.'],
+                                                'data' => ['$ref' => '#/components/schemas/UserResponse'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '422' => [
+                                'description' => 'Validation error (e.g. username already taken)',
+                            ],
+                        ],
+                    ],
+                ],
+                '/api/auth/login' => [
+                    'post' => [
+                        'tags' => ['Auth'],
+                        'summary' => 'Login with username and password',
+                        'requestBody' => [
+                            'required' => true,
+                            'content' => [
+                                'application/json' => [
+                                    'schema' => [
+                                        '$ref' => '#/components/schemas/LoginRequest',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Login successful',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'message' => ['type' => 'string', 'example' => 'Login successful.'],
+                                                'data' => ['$ref' => '#/components/schemas/LoginResponse'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '401' => [
+                                'description' => 'Invalid username or password',
+                            ],
+                            '422' => [
+                                'description' => 'Validation error',
+                            ],
+                        ],
+                    ],
+                ],
                 '/api/cars' => [
                     'get' => [
                         'tags' => ['Cars'],
@@ -211,6 +284,43 @@ class SwaggerController extends Controller
             ],
             'components' => [
                 'schemas' => [
+                    'RegisterRequest' => [
+                        'type' => 'object',
+                        'required' => ['username', 'password', 'phone_number'],
+                        'properties' => [
+                            'username'     => ['type' => 'string', 'example' => 'john_doe'],
+                            'email'        => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'john@example.com'],
+                            'password'     => ['type' => 'string', 'format' => 'password', 'minLength' => 6, 'example' => 'secret123'],
+                            'phone_number' => ['type' => 'string', 'example' => '+256700000000'],
+                        ],
+                    ],
+                    'LoginRequest' => [
+                        'type' => 'object',
+                        'required' => ['username', 'password'],
+                        'properties' => [
+                            'username' => ['type' => 'string', 'example' => 'john_doe'],
+                            'password' => ['type' => 'string', 'format' => 'password', 'example' => 'secret123'],
+                        ],
+                    ],
+                    'UserResponse' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id'           => ['type' => 'integer', 'example' => 1],
+                            'username'     => ['type' => 'string', 'example' => 'john_doe'],
+                            'email'        => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'john@example.com'],
+                            'phone_number' => ['type' => 'string', 'example' => '+256700000000'],
+                        ],
+                    ],
+                    'LoginResponse' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id'           => ['type' => 'integer', 'example' => 1],
+                            'username'     => ['type' => 'string', 'example' => 'john_doe'],
+                            'email'        => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'john@example.com'],
+                            'phone_number' => ['type' => 'string', 'example' => '+256700000000'],
+                            'token'        => ['type' => 'string', 'example' => 'a1b2c3d4e5f6...'],
+                        ],
+                    ],
                     'Car' => [
                         'type' => 'object',
                         'properties' => [
