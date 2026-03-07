@@ -6,9 +6,11 @@ use App\Filament\Resources\CarResource\Pages;
 use App\Models\Car;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class CarResource extends Resource
 {
@@ -41,15 +43,48 @@ class CarResource extends Resource
                 Forms\Components\Textarea::make('car_description')
                     ->columnSpanFull(),
 
-                Forms\Components\FileUpload::make('car_pic')
-                    ->label('Car Photos')
-                    ->image()
-                    ->multiple()
-                    ->reorderable()
-                    ->disk('public_root')
-                    ->directory('TGworld/cars')
-                    ->preserveFilenames()
-                    ->appendFiles()
+                // ── Existing photos (view + delete) ───────────────────────────
+                Forms\Components\Section::make('Current Photos')
+                    ->description('Remove photos by clicking the trash icon on each one.')
+                    ->schema([
+                        Forms\Components\Repeater::make('car_pic_existing')
+                            ->label('')
+                            ->schema([
+                                Forms\Components\Placeholder::make('preview')
+                                    ->label('')
+                                    ->content(fn (Get $get): HtmlString => new HtmlString(
+                                        $get('path')
+                                            ? '<img src="'
+                                                . rtrim(config('app.url'), '/')
+                                                . '/'
+                                                . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
+                                                . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
+                                            : '<em style="color:#aaa;">No preview</em>'
+                                    )),
+                                Forms\Components\Hidden::make('path'),
+                            ])
+                            ->addable(false)
+                            ->reorderable()
+                            ->grid(4)
+                            ->defaultItems(0),
+                    ])
+                    ->collapsible()
+                    ->columnSpanFull(),
+
+                // ── Upload new photos ─────────────────────────────────────────
+                Forms\Components\Section::make('Upload New Photos')
+                    ->description('Upload additional images. They will be added to the existing ones.')
+                    ->schema([
+                        Forms\Components\FileUpload::make('car_pic_new')
+                            ->label('')
+                            ->image()
+                            ->multiple()
+                            ->reorderable()
+                            ->disk('public_root')
+                            ->directory('TGworld/uploads')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsible()
                     ->columnSpanFull(),
             ]);
     }
@@ -58,7 +93,6 @@ class CarResource extends Resource
     {
         return $table
             ->columns([
-                // Uses the car_pic_urls accessor on the Car model (same pattern as profile_photo_url)
                 Tables\Columns\ImageColumn::make('car_pic_urls')
                     ->label('Photos')
                     ->stacked()
