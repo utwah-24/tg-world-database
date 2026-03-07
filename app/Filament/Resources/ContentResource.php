@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContentResource\Pages;
-use App\Filament\Resources\ContentResource\RelationManagers;
 use App\Models\Content;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -29,28 +28,29 @@ class ContentResource extends Resource
                     ->maxLength(255)
                     ->columnSpanFull(),
 
-                Forms\Components\TextInput::make('content_video')
-                    ->label('Video Path')
-                    ->hint('e.g. TGworld/content/videoname.mp4')
-                    ->required()
-                    ->maxLength(255)
-                    ->columnSpanFull(),
-
                 Forms\Components\TextInput::make('duration')
                     ->maxLength(255)
                     ->default(null),
 
+                // Same pattern as profile_photo_path — stores path, disk handles the file
+                Forms\Components\FileUpload::make('content_video')
+                    ->label('Video File')
+                    ->acceptedFileTypes(['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo'])
+                    ->disk('public_root')
+                    ->directory('TGworld/content')
+                    ->preserveFilenames()
+                    ->columnSpanFull(),
+
+                // Inline video preview (uses the video_url accessor, same idea as profile_photo_url)
                 Forms\Components\Placeholder::make('video_preview')
-                    ->label('Video Preview')
-                    ->content(fn ($record) => $record && $record->content_video
+                    ->label('Current Video Preview')
+                    ->content(fn ($record) => $record?->video_url
                         ? new HtmlString(
-                            '<video controls style="max-width:100%;max-height:320px;'
-                            . 'border-radius:8px;margin-top:8px;">'
-                            . '<source src="/' . ltrim($record->content_video, '/') . '" type="video/mp4">'
-                            . 'Your browser does not support the video tag.'
+                            '<video controls style="max-width:100%;max-height:300px;border-radius:8px;">'
+                            . '<source src="' . $record->video_url . '" type="video/mp4">'
                             . '</video>'
                         )
-                        : new HtmlString('<em>Save the record first to preview the video</em>')
+                        : new HtmlString('<em style="color:#888;">No video uploaded yet</em>')
                     )
                     ->columnSpanFull(),
             ]);
@@ -65,10 +65,11 @@ class ContentResource extends Resource
                     ->sortable()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('content_video')
+                // Uses the video_url accessor on the Content model (same pattern as profile_photo_url)
+                Tables\Columns\TextColumn::make('video_url')
                     ->label('Video')
-                    ->formatStateUsing(fn ($state) => basename($state ?? ''))
-                    ->url(fn ($record) => '/' . ltrim($record->content_video ?? '', '/'))
+                    ->formatStateUsing(fn ($record) => basename($record->content_video ?? ''))
+                    ->url(fn ($record) => $record->video_url)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-play-circle')
                     ->color('primary'),
@@ -88,8 +89,8 @@ class ContentResource extends Resource
             ])
             ->filters([])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

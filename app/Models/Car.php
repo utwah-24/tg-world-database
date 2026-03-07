@@ -19,4 +19,20 @@ class Car extends Model
     protected $casts = [
         'car_pic' => 'array',
     ];
+
+    /**
+     * Returns an array of fully-encoded absolute URLs for each car photo.
+     * Used by Filament's ImageColumn via the 'car_pic_urls' attribute name.
+     */
+    public function getCarPicUrlsAttribute(): array
+    {
+        return collect($this->car_pic ?? [])
+            ->map(function ($path) {
+                $base     = rtrim(config('app.url'), '/');
+                $segments = explode('/', ltrim($path, '/'));
+                $encoded  = array_map('rawurlencode', $segments);
+                return $base . '/' . implode('/', $encoded);
+            })
+            ->toArray();
+    }
 }

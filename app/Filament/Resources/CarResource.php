@@ -3,14 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CarResource\Pages;
-use App\Filament\Resources\CarResource\RelationManagers;
 use App\Models\Car;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
 
 class CarResource extends Resource
 {
@@ -34,33 +32,24 @@ class CarResource extends Resource
 
                 Forms\Components\Select::make('type')
                     ->options([
-                        'truck'        => 'Truck',
-                        'suv'          => 'SUV',
-                        'third_party'  => 'Third Party',
+                        'truck'       => 'Truck',
+                        'suv'         => 'SUV',
+                        'third_party' => 'Third Party',
                     ])
                     ->searchable(),
 
                 Forms\Components\Textarea::make('car_description')
                     ->columnSpanFull(),
 
-                Forms\Components\TagsInput::make('car_pic')
-                    ->label('Car Photo Paths')
-                    ->hint('Enter each image path (e.g. TGworld/SUV/carname/front.jpeg) and press Enter')
-                    ->columnSpanFull(),
-
-                Forms\Components\Placeholder::make('image_preview')
-                    ->label('Current Photos')
-                    ->content(fn ($record) => $record
-                        ? new HtmlString(
-                            collect($record->car_pic ?? [])
-                                ->map(fn ($path) => '<img src="/' . ltrim($path, '/') . '" '
-                                    . 'style="height:120px;width:160px;object-fit:cover;'
-                                    . 'margin:4px;border-radius:6px;display:inline-block;">')
-                                ->join('')
-                            ?: '<em>No photos yet</em>'
-                        )
-                        : new HtmlString('<em>Save the record first to preview photos</em>')
-                    )
+                Forms\Components\FileUpload::make('car_pic')
+                    ->label('Car Photos')
+                    ->image()
+                    ->multiple()
+                    ->reorderable()
+                    ->disk('public_root')
+                    ->directory('TGworld/cars')
+                    ->preserveFilenames()
+                    ->appendFiles()
                     ->columnSpanFull(),
             ]);
     }
@@ -69,13 +58,9 @@ class CarResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('car_pic')
-                    ->label('Photo')
-                    ->getStateUsing(fn ($record): array =>
-                        collect($record->car_pic ?? [])
-                            ->map(fn ($path) => '/' . ltrim($path, '/'))
-                            ->toArray()
-                    )
+                // Uses the car_pic_urls accessor on the Car model (same pattern as profile_photo_url)
+                Tables\Columns\ImageColumn::make('car_pic_urls')
+                    ->label('Photos')
                     ->stacked()
                     ->limit(3)
                     ->height(60)
@@ -116,8 +101,8 @@ class CarResource extends Resource
                     ]),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

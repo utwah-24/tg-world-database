@@ -3,14 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\LogoResource\Pages;
-use App\Filament\Resources\LogoResource\RelationManagers;
 use App\Models\Logo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
 
 class LogoResource extends Resource
 {
@@ -28,21 +26,13 @@ class LogoResource extends Resource
                     ->required()
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('path')
-                    ->label('Image Path')
-                    ->hint('e.g. logo-dark.jpeg or TGworld/...')
-                    ->required()
-                    ->maxLength(255),
-
-                Forms\Components\Placeholder::make('logo_preview')
-                    ->label('Preview')
-                    ->content(fn ($record) => $record && $record->path
-                        ? new HtmlString(
-                            '<img src="/' . ltrim($record->path, '/') . '" '
-                            . 'style="max-height:160px;border-radius:8px;margin-top:8px;">'
-                        )
-                        : new HtmlString('<em>Save first to see preview</em>')
-                    )
+                // Same pattern as profile_photo_path in the reference UserResource
+                Forms\Components\FileUpload::make('path')
+                    ->label('Logo Image')
+                    ->image()
+                    ->disk('public_root')
+                    ->directory('TGworld/logos')
+                    ->preserveFilenames()
                     ->columnSpanFull(),
             ]);
     }
@@ -51,9 +41,9 @@ class LogoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('path')
+                // Uses the logo_url accessor on the Logo model (same pattern as profile_photo_url)
+                Tables\Columns\ImageColumn::make('logo_url')
                     ->label('Logo')
-                    ->getStateUsing(fn ($record) => '/' . ltrim($record->path ?? '', '/'))
                     ->height(60)
                     ->width(100),
 
@@ -73,8 +63,8 @@ class LogoResource extends Resource
             ])
             ->filters([])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

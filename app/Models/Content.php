@@ -15,4 +15,16 @@ class Content extends Model
         'content_video',
         'duration',
     ];
+
+    /**
+     * Returns the publicly accessible URL for the content video.
+     */
+    public function getVideoUrlAttribute(): ?string
+    {
+        if (! $this->content_video) {
+            return null;
+        }
+
+        return '/' . implode('/', array_map('rawurlencode', explode('/', ltrim($this->content_video, '/'))));
+    }
 }
