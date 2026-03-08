@@ -37,6 +37,9 @@ class CarResource extends Resource
                         'truck'       => 'Truck',
                         'suv'         => 'SUV',
                         'third_party' => 'Third Party',
+                        'sedan'       => 'Sedan',
+                        'van'         => 'Van',
+                        'pickup'      => 'Pickup',
                     ])
                     ->searchable(),
 
@@ -117,10 +120,22 @@ class CarResource extends Resource
 
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'truck'       => 'Truck',
+                        'suv'         => 'SUV',
+                        'third_party' => 'Third Party',
+                        'sedan'       => 'Sedan',
+                        'van'         => 'Van',
+                        'pickup'      => 'Pickup',
+                        default       => '—',
+                    })
                     ->color(fn ($state) => match ($state) {
                         'truck'       => 'warning',
                         'suv'         => 'success',
                         'third_party' => 'info',
+                        'sedan'       => 'primary',
+                        'van'         => 'danger',
+                        'pickup'      => 'gray',
                         default       => 'gray',
                     }),
 
@@ -155,6 +170,9 @@ class CarResource extends Resource
                         'truck'       => 'Truck',
                         'suv'         => 'SUV',
                         'third_party' => 'Third Party',
+                        'sedan'       => 'Sedan',
+                        'van'         => 'Van',
+                        'pickup'      => 'Pickup',
                     ]),
 
                 Tables\Filters\SelectFilter::make('condition')

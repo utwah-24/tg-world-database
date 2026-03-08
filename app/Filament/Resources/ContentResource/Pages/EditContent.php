@@ -16,4 +16,16 @@ class EditContent extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        // Only re-extract if a new video was uploaded (path changed)
+        $current = $this->record->content_video ?? null;
+
+        if (isset($data['content_video']) && $data['content_video'] !== $current) {
+            $data['duration'] = CreateContent::extractDuration($data['content_video']);
+        }
+
+        return $data;
+    }
 }

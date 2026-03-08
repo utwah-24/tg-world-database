@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ContentResource\Pages;
+use App\Models\Car;
 use App\Models\Content;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -30,15 +31,26 @@ class ContentResource extends Resource
 
                 Forms\Components\TextInput::make('duration')
                     ->maxLength(255)
-                    ->default(null),
+                    ->default(null)
+                    ->readOnly()
+                    ->placeholder('Auto-filled when a video is uploaded')
+                    ->helperText('Extracted automatically from the video file.'),
 
-                // Same pattern as profile_photo_path — stores path, disk handles the file
+                Forms\Components\Select::make('car_id')
+                    ->label('Linked to car')
+                    ->options(fn () => Car::orderBy('car_name')->pluck('car_name', 'car_id'))
+                    ->searchable()
+                    ->nullable()
+                    ->placeholder('Search for a car...')
+                    ->helperText('The car ID will be saved automatically once you select a car name.'),
+
                 Forms\Components\FileUpload::make('content_video')
                     ->label('Video File')
                     ->acceptedFileTypes(['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo'])
                     ->disk('public_root')
                     ->directory('TGworld/content')
                     ->preserveFilenames()
+                    ->maxSize(2 * 1024 * 1024)
                     ->columnSpanFull(),
 
                 // Inline video preview (uses the video_url accessor, same idea as profile_photo_url)
@@ -72,6 +84,14 @@ class ContentResource extends Resource
                     ->url(fn ($record) => $record->video_url)
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-play-circle')
+                    ->color('primary'),
+
+                Tables\Columns\TextColumn::make('car.car_name')
+                    ->label('Linked Car')
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('—')
+                    ->badge()
                     ->color('primary'),
 
                 Tables\Columns\TextColumn::make('duration')

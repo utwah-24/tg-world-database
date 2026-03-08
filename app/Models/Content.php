@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Content extends Model
 {
@@ -14,7 +15,13 @@ class Content extends Model
         'content_name',
         'content_video',
         'duration',
+        'car_id',
     ];
+
+    public function car(): BelongsTo
+    {
+        return $this->belongsTo(Car::class, 'car_id', 'car_id');
+    }
 
     /**
      * Returns the publicly accessible URL for the content video.

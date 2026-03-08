@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Car extends Model
 {
@@ -20,6 +21,11 @@ class Car extends Model
     protected $casts = [
         'car_pic' => 'array',
     ];
+
+    public function content(): HasOne
+    {
+        return $this->hasOne(Content::class, 'car_id', 'car_id');
+    }
 
     /**
      * Returns an array of fully-encoded absolute URLs for each car photo.
