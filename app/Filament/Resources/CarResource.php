@@ -40,6 +40,14 @@ class CarResource extends Resource
                     ])
                     ->searchable(),
 
+                Forms\Components\Select::make('condition')
+                    ->options([
+                        'new'         => 'New',
+                        'second_hand' => 'Second Hand',
+                        'third_party' => 'Third Party',
+                    ])
+                    ->searchable(),
+
                 Forms\Components\Textarea::make('car_description')
                     ->columnSpanFull(),
 
@@ -116,6 +124,21 @@ class CarResource extends Resource
                         default       => 'gray',
                     }),
 
+                Tables\Columns\TextColumn::make('condition')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'new'         => 'New',
+                        'second_hand' => 'Second Hand',
+                        'third_party' => 'Third Party',
+                        default       => '—',
+                    })
+                    ->color(fn ($state) => match ($state) {
+                        'new'         => 'success',
+                        'second_hand' => 'warning',
+                        'third_party' => 'info',
+                        default       => 'gray',
+                    }),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -131,6 +154,13 @@ class CarResource extends Resource
                     ->options([
                         'truck'       => 'Truck',
                         'suv'         => 'SUV',
+                        'third_party' => 'Third Party',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('condition')
+                    ->options([
+                        'new'         => 'New',
+                        'second_hand' => 'Second Hand',
                         'third_party' => 'Third Party',
                     ]),
             ])
