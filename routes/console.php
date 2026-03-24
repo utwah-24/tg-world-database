@@ -5,11 +5,15 @@ use App\Models\Content;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schedule;
 use Symfony\Component\Console\Command\Command;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// Run daily at midnight to clear Coming Soon status from cars whose arrival date has passed
+Schedule::command('cars:clear-coming-soon')->dailyAt('00:00');
 
 Artisan::command('cars:sync-from-folders', function () {
     $basePath = public_path('TGworld');

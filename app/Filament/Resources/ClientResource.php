@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\UserResource\Pages;
-use App\Models\Admin;
+use App\Filament\Resources\ClientResource\Pages;
+use App\Models\Client;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -11,19 +11,19 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class UserResource extends Resource
+class ClientResource extends Resource
 {
-    protected static ?string $model = Admin::class;
+    protected static ?string $model = Client::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationLabel = 'Admins';
+    protected static ?string $navigationLabel = 'Users';
 
-    protected static ?string $modelLabel = 'Admin';
+    protected static ?string $modelLabel = 'User';
 
-    protected static ?string $pluralModelLabel = 'Admins';
+    protected static ?string $pluralModelLabel = 'Users';
 
-    protected static ?string $slug = 'admins';
+    protected static ?string $slug = 'users';
 
     public static function form(Form $form): Form
     {
@@ -52,7 +52,8 @@ class UserResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('username')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone_number')
@@ -66,11 +67,10 @@ class UserResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -79,19 +79,12 @@ class UserResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'index'  => Pages\ListClients::route('/'),
+            'create' => Pages\CreateClient::route('/create'),
+            'edit'   => Pages\EditClient::route('/{record}/edit'),
         ];
     }
 }

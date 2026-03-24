@@ -6,17 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('cars', function (Blueprint $table) {
-            $table->json('car_pic')->nullable()->change();
+            $table->smallInteger('year')->unsigned()->nullable()->after('car_name');
         });
     }
 
     public function down(): void
     {
         Schema::table('cars', function (Blueprint $table) {
-            $table->string('car_pic')->nullable()->change();
+            $table->dropColumn('year');
         });
     }
 };

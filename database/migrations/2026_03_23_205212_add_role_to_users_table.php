@@ -6,17 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->json('car_pic')->nullable()->change();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('role')->default('admin')->after('phone_number');
         });
     }
 
     public function down(): void
     {
-        Schema::table('cars', function (Blueprint $table) {
-            $table->string('car_pic')->nullable()->change();
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
         });
     }
 };

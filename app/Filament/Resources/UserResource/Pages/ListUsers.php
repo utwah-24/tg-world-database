@@ -10,10 +10,21 @@ class ListUsers extends ListRecords
 {
     protected static string $resource = UserResource::class;
 
+    protected ?string $heading = 'Admins';
+
+    public function getBreadcrumbs(): array
+    {
+        return [
+            '/admin/admins' => 'Admins',
+            'List',
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('New Admin'),
         ];
     }
 }

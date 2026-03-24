@@ -11,15 +11,24 @@ class Car extends Model
 
     protected $fillable = [
         'car_name',
+        'year',
         'car_pic',
         'car_price',
         'car_description',
         'type',
+        'company',
         'condition',
+        'brand',
+        'is_coming_soon',
+        'arrival_date',
+        'is_sold',
     ];
 
     protected $casts = [
-        'car_pic' => 'array',
+        'car_pic'        => 'array',
+        'is_coming_soon' => 'boolean',
+        'arrival_date'   => 'date',
+        'is_sold'        => 'boolean',
     ];
 
     public function content(): HasOne
@@ -35,9 +44,14 @@ class Car extends Model
     {
         return collect($this->car_pic ?? [])
             ->map(function ($path) {
-                $base     = rtrim(config('app.url'), '/');
                 $segments = explode('/', ltrim($path, '/'));
                 $encoded  = array_map('rawurlencode', $segments);
+                // Use the actual request host so this works regardless of APP_URL config
+                try {
+                    $base = request()->getSchemeAndHttpHost();
+                } catch (\Throwable $e) {
+                    $base = rtrim(config('app.url'), '/');
+                }
                 return $base . '/' . implode('/', $encoded);
             })
             ->toArray();

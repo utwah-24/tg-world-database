@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Carbon;
 
 class CarResource extends Resource
 {
@@ -27,6 +28,13 @@ class CarResource extends Resource
                 Forms\Components\TextInput::make('car_name')
                     ->required()
                     ->maxLength(255),
+
+                Forms\Components\TextInput::make('year')
+                    ->numeric()
+                    ->minValue(1900)
+                    ->maxValue((int) date('Y') + 1)
+                    ->placeholder('e.g. 2024')
+                    ->default(null),
 
                 Forms\Components\TextInput::make('car_price')
                     ->maxLength(255)
@@ -51,7 +59,37 @@ class CarResource extends Resource
                     ])
                     ->searchable(),
 
+                Forms\Components\TextInput::make('company')
+                    ->maxLength(255)
+                    ->placeholder('e.g. Toyota, Ford, BMW')
+                    ->default(null),
+
+                Forms\Components\TextInput::make('brand')
+                    ->maxLength(255)
+                    ->placeholder('e.g. Landcruiser, Ranger, X3')
+                    ->default(null),
+
                 Forms\Components\Textarea::make('car_description')
+                    ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('is_sold')
+                    ->label('Sold for Now')
+                    ->helperText('Mark this car as sold. You can unmark it at any time.')
+                    ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('is_coming_soon')
+                    ->label('Coming Soon')
+                    ->helperText('Enable to mark this car as arriving soon. Status is auto-removed on the arrival date.')
+                    ->live()
+                    ->columnSpanFull(),
+
+                Forms\Components\DatePicker::make('arrival_date')
+                    ->label('Arrival Date')
+                    ->helperText('The date this car arrives. Coming Soon status is removed automatically on this date.')
+                    ->minDate(Carbon::tomorrow())
+                    ->native(false)
+                    ->visible(fn (Get $get): bool => (bool) $get('is_coming_soon'))
+                    ->required(fn (Get $get): bool => (bool) $get('is_coming_soon'))
                     ->columnSpanFull(),
 
                 // ── Existing photos (view + delete) ───────────────────────────
@@ -63,15 +101,15 @@ class CarResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('preview')
                                     ->label('')
-                                    ->content(fn (Get $get): HtmlString => new HtmlString(
-                                        $get('path')
-                                            ? '<img src="'
-                                                . rtrim(config('app.url'), '/')
-                                                . '/'
-                                                . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
-                                                . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
-                                            : '<em style="color:#aaa;">No preview</em>'
-                                    )),
+                    ->content(fn (Get $get): HtmlString => new HtmlString(
+                        $get('path')
+                            ? '<img src="'
+                                . request()->getSchemeAndHttpHost()
+                                . '/'
+                                . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
+                                . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
+                            : '<em style="color:#aaa;">No preview</em>'
+                    )),
                                 Forms\Components\Hidden::make('path'),
                             ])
                             ->addable(false)
@@ -115,6 +153,10 @@ class CarResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('year')
+                    ->sortable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('car_price')
                     ->searchable(),
 
@@ -153,6 +195,23 @@ class CarResource extends Resource
                         'third_party' => 'info',
                         default       => 'gray',
                     }),
+
+                Tables\Columns\IconColumn::make('is_sold')
+                    ->label('Sold for Now')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-x-circle')
+                    ->falseIcon('heroicon-o-check-circle')
+                    ->trueColor('danger')
+                    ->falseColor('success')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('arrival_date')
+                    ->label('Coming Soon')
+                    ->badge()
+                    ->color('warning')
+                    ->formatStateUsing(fn ($state) => $state ? '🕐 Arrives ' . Carbon::parse($state)->format('d M Y') : null)
+                    ->placeholder('—')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

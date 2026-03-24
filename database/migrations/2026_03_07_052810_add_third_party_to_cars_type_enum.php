@@ -7,12 +7,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // MySQL requires re-declaring all ENUM values to add a new one
-        DB::statement("ALTER TABLE cars MODIFY COLUMN type ENUM('suv', 'truck', 'third_party') NULL");
+        // SQLite uses TEXT for all columns — ENUM modification is MySQL-only
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE cars MODIFY COLUMN type ENUM('suv', 'truck', 'third_party') NULL");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE cars MODIFY COLUMN type ENUM('suv', 'truck') NULL");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE cars MODIFY COLUMN type ENUM('suv', 'truck') NULL");
+        }
     }
 };
