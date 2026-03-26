@@ -35,12 +35,7 @@ class CarController extends Controller
         }
 
         return response()->json([
-            'data' => $cars->map(function (Car $car) {
-                $categoryKey = $this->resolveCategoryFromPath($car->car_pic);
-                $car->setAttribute('category', $this->categoryNameFromKey($categoryKey));
-
-                return $car;
-            }),
+            'data' => $cars->map(fn (Car $car) => $this->formatCar($car)),
         ]);
     }
 
@@ -64,11 +59,7 @@ class CarController extends Controller
         $thirdPartyCars = $this->filterCarsByCategory($cars, 'THIRD PARTY');
 
         return response()->json([
-            'data' => $thirdPartyCars->map(function (Car $car) {
-                $car->setAttribute('category', 'Third party');
-
-                return $car;
-            }),
+            'data' => $thirdPartyCars->map(fn (Car $car) => $this->formatCar($car)),
         ]);
     }
 
@@ -83,11 +74,32 @@ class CarController extends Controller
         }
 
         return response()->json([
-            'data' => tap($car, function (Car $resolvedCar): void {
-                $categoryKey = $this->resolveCategoryFromPath($resolvedCar->car_pic);
-                $resolvedCar->setAttribute('category', $this->categoryNameFromKey($categoryKey));
-            }),
+            'data' => $this->formatCar($car),
         ]);
+    }
+
+    private function formatCar(Car $car): array
+    {
+        $categoryKey = $this->resolveCategoryFromPath($car->car_pic);
+
+        return [
+            'car_id'          => $car->car_id,
+            'car_name'        => $car->car_name,
+            'year'            => $car->year,
+            'car_pic'         => $car->car_pic,
+            'car_price'       => $car->car_price,
+            'car_description' => $car->car_description,
+            'type'            => $car->type,
+            'condition'       => $car->condition,
+            'company'         => $car->company,
+            'brand'           => $car->brand,
+            'is_coming_soon'  => $car->is_coming_soon,
+            'arrival_date'    => $car->arrival_date?->toDateString(),
+            'is_sold'         => $car->is_sold,
+            'category'        => $this->categoryNameFromKey($categoryKey),
+            'created_at'      => $car->created_at,
+            'updated_at'      => $car->updated_at,
+        ];
     }
 
     private function filterCarsByCategory(Collection $cars, string $categoryKey): Collection

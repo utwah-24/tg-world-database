@@ -25,10 +25,8 @@ class Car extends Model
     ];
 
     protected $casts = [
-        'car_pic'        => 'array',
-        'is_coming_soon' => 'boolean',
-        'arrival_date'   => 'date',
-        'is_sold'        => 'boolean',
+        'car_pic'      => 'array',
+        'arrival_date' => 'date',
     ];
 
     public function content(): HasOne
@@ -52,7 +50,7 @@ class Car extends Model
                 } catch (\Throwable $e) {
                     $base = rtrim(config('app.url'), '/');
                 }
-                return $base . '/' . implode('/', $encoded);
+                return $base . '/public/' . implode('/', $encoded);
             })
             ->toArray();
     }

@@ -9,6 +9,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements FilamentUser, HasName
 {
+    protected $table = 'admins';
+
     protected $fillable = [
         'username',
         'email',

@@ -13,11 +13,11 @@ class ClearExpiredComingSoon extends Command
 
     public function handle(): void
     {
-        $count = Car::where('is_coming_soon', true)
+        $count = Car::where('is_coming_soon', 'set')
             ->whereNotNull('arrival_date')
             ->whereDate('arrival_date', '<=', Carbon::today())
             ->update([
-                'is_coming_soon' => false,
+                'is_coming_soon' => null,
                 'arrival_date'   => null,
             ]);
 

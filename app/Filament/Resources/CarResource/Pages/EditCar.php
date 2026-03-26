@@ -31,6 +31,10 @@ class EditCar extends EditRecord
 
         $data['car_pic_new'] = [];
 
+        // Convert string DB values back to booleans so the Toggle components render correctly
+        $data['is_coming_soon'] = $data['is_coming_soon'] === 'set';
+        $data['is_sold']        = $data['is_sold'] === 'sold';
+
         return $data;
     }
 
@@ -50,6 +54,10 @@ class EditCar extends EditRecord
         $data['car_pic'] = array_merge($existing, $new);
 
         unset($data['car_pic_existing'], $data['car_pic_new']);
+
+        // Convert toggle booleans to string values for the database
+        $data['is_coming_soon'] = ! empty($data['arrival_date']) ? 'set' : null;
+        $data['is_sold']        = ! empty($data['is_sold']) ? 'sold' : 'available';
 
         return $data;
     }

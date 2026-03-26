@@ -324,13 +324,14 @@ class SwaggerController extends Controller
                     'Car' => [
                         'type' => 'object',
                         'properties' => [
-                            'car_id' => ['type' => 'integer', 'example' => 1],
-                            'car_name' => ['type' => 'string', 'example' => '2023 FORD RANGER WILDTRACK'],
-                            'car_pic' => [
-                                'type' => 'array',
+                            'car_id'          => ['type' => 'integer', 'example' => 1],
+                            'car_name'        => ['type' => 'string', 'example' => '2023 FORD RANGER WILDTRACK'],
+                            'year'            => ['type' => 'integer', 'nullable' => true, 'example' => 2023],
+                            'car_pic'         => [
+                                'type'     => 'array',
                                 'nullable' => true,
-                                'items' => ['type' => 'string'],
-                                'example' => [
+                                'items'    => ['type' => 'string'],
+                                'example'  => [
                                     'TGworld/SUV/2023 FORD RANGER WILDTRACK/Back.jpeg',
                                     'TGworld/SUV/2023 FORD RANGER WILDTRACK/Front.jpeg',
                                     'TGworld/SUV/2023 FORD RANGER WILDTRACK/Interior.jpeg',
@@ -338,12 +339,28 @@ class SwaggerController extends Controller
                                     'TGworld/SUV/2023 FORD RANGER WILDTRACK/Engine.jpeg',
                                 ],
                             ],
-                            'car_price' => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
+                            'car_price'       => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
                             'car_description' => ['type' => 'string', 'nullable' => true],
-                            'type' => ['type' => 'string', 'nullable' => true, 'enum' => ['suv', 'truck'], 'example' => 'suv'],
-                            'category' => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
-                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
-                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'type'            => [
+                                'type'     => 'string',
+                                'nullable' => true,
+                                'enum'     => ['truck', 'suv', 'third_party', 'sedan', 'van', 'pickup'],
+                                'example'  => 'suv',
+                            ],
+                            'condition'       => [
+                                'type'     => 'string',
+                                'nullable' => true,
+                                'enum'     => ['new', 'second_hand', 'third_party'],
+                                'example'  => 'new',
+                            ],
+                            'company'         => ['type' => 'string', 'nullable' => true, 'example' => 'Ford'],
+                            'brand'           => ['type' => 'string', 'nullable' => true, 'example' => 'Ranger Wildtrack'],
+                            'is_coming_soon'  => ['type' => 'string', 'nullable' => true, 'enum' => ['set', null], 'example' => 'set'],
+                            'arrival_date'    => ['type' => 'string', 'format' => 'date', 'nullable' => true, 'example' => '2026-04-15'],
+                            'is_sold'         => ['type' => 'string', 'enum' => ['available', 'sold'], 'example' => 'available'],
+                            'category'        => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
+                            'created_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],
                     ],
                     'Category' => [

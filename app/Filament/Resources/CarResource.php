@@ -105,7 +105,7 @@ class CarResource extends Resource
                         $get('path')
                             ? '<img src="'
                                 . request()->getSchemeAndHttpHost()
-                                . '/'
+                                . '/public/'
                                 . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
                                 . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
                             : '<em style="color:#aaa;">No preview</em>'
@@ -162,6 +162,7 @@ class CarResource extends Resource
 
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
+                    ->searchable()
                     ->formatStateUsing(fn ($state) => match ($state) {
                         'truck'       => 'Truck',
                         'suv'         => 'SUV',
@@ -196,21 +197,39 @@ class CarResource extends Resource
                         default       => 'gray',
                     }),
 
-                Tables\Columns\IconColumn::make('is_sold')
+                Tables\Columns\TextColumn::make('is_sold')
                     ->label('Sold for Now')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-x-circle')
-                    ->falseIcon('heroicon-o-check-circle')
-                    ->trueColor('danger')
-                    ->falseColor('success')
+                    ->badge()
+                    ->state(fn (Car $record): string => $record->is_sold === 'sold' ? 'Sold' : 'Available')
+                    ->color(fn (Car $record): string => $record->is_sold === 'sold' ? 'danger' : 'success')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('arrival_date')
                     ->label('Coming Soon')
                     ->badge()
                     ->color('warning')
-                    ->formatStateUsing(fn ($state) => $state ? '🕐 Arrives ' . Carbon::parse($state)->format('d M Y') : null)
+                    ->state(function (Car $record): ?string {
+                        if ($record->is_coming_soon !== 'set') {
+                            return null;
+                        }
+
+                        return $record->arrival_date
+                            ? '🕐 Arrives ' . Carbon::parse($record->arrival_date)->format('d M Y')
+                            : 'Coming Soon';
+                    })
                     ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('company')
+                    ->label('Company')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Brand')
+                    ->searchable()
+                    ->sortable()
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
