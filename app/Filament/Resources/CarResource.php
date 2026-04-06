@@ -105,7 +105,7 @@ class CarResource extends Resource
                         $get('path')
                             ? '<img src="'
                                 . request()->getSchemeAndHttpHost()
-                                . '/public/'
+                                . '/'
                                 . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
                                 . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
                             : '<em style="color:#aaa;">No preview</em>'

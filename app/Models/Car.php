@@ -50,7 +50,7 @@ class Car extends Model
                 } catch (\Throwable $e) {
                     $base = rtrim(config('app.url'), '/');
                 }
-                return $base . '/public/' . implode('/', $encoded);
+                return $base . '/' . implode('/', $encoded);
             })
             ->toArray();
     }
