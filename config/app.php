@@ -56,6 +56,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Media / Asset Base URL
+    |--------------------------------------------------------------------------
+    |
+    | Base URL prepended to every stored media path (car photos, logos, videos).
+    | Locally leave this unset — APP_URL is used as the fallback.
+    |
+    | On cPanel (or any host where the document root is the project root rather
+    | than the public/ sub-folder) set this to include the /public segment:
+    |
+    |   MEDIA_BASE_URL=https://tgworld.e-saloon.online/public
+    |
+    */
+
+    'media_url' => rtrim(env('MEDIA_BASE_URL', env('APP_URL', 'http://localhost')), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

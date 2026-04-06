@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class CarController extends Controller
 {
@@ -19,7 +19,7 @@ class CarController extends Controller
     public function index(Request $request): JsonResponse
     {
         $category = $request->query('category');
-        $cars = Car::orderBy('car_id')->get();
+        $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
 
         if ($category !== null) {
             $normalizedCategory = $this->normalizeCategory((string) $category);
@@ -55,7 +55,7 @@ class CarController extends Controller
 
     public function thirdParty(): JsonResponse
     {
-        $cars = Car::orderBy('car_id')->get();
+        $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
         $thirdPartyCars = $this->filterCarsByCategory($cars, 'THIRD PARTY');
 
         return response()->json([
@@ -65,7 +65,7 @@ class CarController extends Controller
 
     public function show(int $carId): JsonResponse
     {
-        $car = Car::where('car_id', $carId)->first();
+        $car = Car::with(['company', 'brand', 'vehicleModel'])->where('car_id', $carId)->first();
 
         if (! $car) {
             return response()->json([
@@ -83,22 +83,29 @@ class CarController extends Controller
         $categoryKey = $this->resolveCategoryFromPath($car->car_pic);
 
         return [
-            'car_id'          => $car->car_id,
-            'car_name'        => $car->car_name,
-            'year'            => $car->year,
-            'car_pic'         => $car->car_pic,
-            'car_price'       => $car->car_price,
+            'car_id' => $car->car_id,
+            'car_name' => $car->car_name,
+            'year' => $car->year,
+            'car_pic' => $car->car_pic,
+            'car_price' => $car->car_price,
             'car_description' => $car->car_description,
-            'type'            => $car->type,
-            'condition'       => $car->condition,
-            'company'         => $car->company,
-            'brand'           => $car->brand,
-            'is_coming_soon'  => $car->is_coming_soon,
-            'arrival_date'    => $car->arrival_date?->toDateString(),
-            'is_sold'         => $car->is_sold,
-            'category'        => $this->categoryNameFromKey($categoryKey),
-            'created_at'      => $car->created_at,
-            'updated_at'      => $car->updated_at,
+            'type' => $car->type,
+            'condition' => $car->condition,
+            'company_id' => $car->company_id,
+            'company' => $car->company?->name ?? $car->company_label,
+            'company_logo' => $car->company_logo_url,
+            'company_logo_path' => $car->company_logo_path ?? $car->company?->logo,
+            'brand_id' => $car->brand_id,
+            'brand' => $car->brand?->name ?? $car->brand_label,
+            'model_id' => $car->vehicle_model_id,
+            'model' => $car->vehicleModel?->name ?? $car->model_label,
+            'is_coming_soon' => $car->is_coming_soon,
+            'arrival_date' => $car->arrival_date?->toDateString(),
+            'is_sold' => $car->is_sold,
+            'registration' => $car->registration,
+            'category' => $this->categoryNameFromKey($categoryKey),
+            'created_at' => $car->created_at,
+            'updated_at' => $car->updated_at,
         ];
     }
 

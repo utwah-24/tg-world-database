@@ -3,7 +3,12 @@
 namespace App\Filament\Resources\CarResource\Pages;
 
 use App\Filament\Resources\CarResource;
+use App\Models\Brand;
+use App\Models\Car;
+use App\Models\Company;
+use App\Models\VehicleModel;
 use Filament\Actions;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 
 class EditCar extends EditRecord
@@ -17,11 +22,17 @@ class EditCar extends EditRecord
         ];
     }
 
-    /**
-     * When loading the edit form, split car_pic into:
-     *  - car_pic_existing  → shown in the "Current Photos" repeater
-     *  - car_pic_new       → empty FileUpload for new uploads
-     */
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+
+    protected function getCancelFormAction(): Action
+    {
+        return parent::getCancelFormAction()
+            ->url($this->getResource()::getUrl('index'));
+    }
+
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data['car_pic_existing'] = collect($data['car_pic'] ?? [])
@@ -31,16 +42,29 @@ class EditCar extends EditRecord
 
         $data['car_pic_new'] = [];
 
+        // Populate the company name from the relationship
+        $company = $data['company_id'] ? Company::find($data['company_id']) : null;
+
+        $data['company_name'] = $company?->name;
+        // company_logo intentionally left empty — FileUpload always starts blank.
+        // The existing logo is shown via the read-only preview Placeholder above it.
+
+        $data['brand_name'] = $data['brand_id']
+            ? Brand::find($data['brand_id'])?->name
+            : null;
+
+        $data['model_name'] = $data['vehicle_model_id']
+            ? VehicleModel::find($data['vehicle_model_id'])?->name
+            : null;
+
         // Convert string DB values back to booleans so the Toggle components render correctly
         $data['is_coming_soon'] = $data['is_coming_soon'] === 'set';
-        $data['is_sold']        = $data['is_sold'] === 'sold';
+        $data['is_sold'] = $data['is_sold'] === 'sold';
+        $data['registration'] = $data['registration'] === 'registered';
 
         return $data;
     }
 
-    /**
-     * Before saving, merge remaining existing paths with any new uploads.
-     */
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $existing = collect($data['car_pic_existing'] ?? [])
@@ -55,10 +79,94 @@ class EditCar extends EditRecord
 
         unset($data['car_pic_existing'], $data['car_pic_new']);
 
+        // Resolve or create the company from the typed name
+        $data['company_id'] = $this->resolveCompanyId(
+            $data['company_name'] ?? null,
+            $data['company_logo'] ?? null,
+        );
+
+        unset($data['company_name'], $data['company_logo']);
+
+        $data = array_merge($data, Car::companySnapshotForCompanyId($data['company_id'] ?? null));
+
+        $data['brand_id'] = $this->resolveBrandId($data['brand_name'] ?? null);
+        unset($data['brand_name']);
+        $data = array_merge($data, Car::brandSnapshotForBrandId($data['brand_id'] ?? null));
+
+        $data['vehicle_model_id'] = $this->resolveVehicleModelId(
+            $data['model_name'] ?? null,
+            $data['brand_id'] ?? null,
+        );
+        unset($data['model_name']);
+        $data = array_merge($data, Car::vehicleModelSnapshotForModelId($data['vehicle_model_id'] ?? null));
+
         // Convert toggle booleans to string values for the database
         $data['is_coming_soon'] = ! empty($data['arrival_date']) ? 'set' : null;
-        $data['is_sold']        = ! empty($data['is_sold']) ? 'sold' : 'available';
+        $data['is_sold'] = ! empty($data['is_sold']) ? 'sold' : 'available';
+        $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
 
         return $data;
+    }
+
+    private function resolveCompanyId(?string $name, ?string $logo): ?int
+    {
+        if (blank($name)) {
+            return null;
+        }
+
+        $company = Company::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])->first();
+
+        if ($company) {
+            // Update logo only if a new one was uploaded
+            if ($logo) {
+                $company->update(['logo' => $logo]);
+            }
+
+            return $company->id;
+        }
+
+        // Brand-new company — create it with the optional logo
+        return Company::create([
+            'name' => trim($name),
+            'logo' => $logo ?: null,
+        ])->id;
+    }
+
+    private function resolveBrandId(?string $name): ?int
+    {
+        if (blank($name)) {
+            return null;
+        }
+
+        $trimmed = trim($name);
+        $existing = Brand::whereRaw('LOWER(name) = ?', [strtolower($trimmed)])->first();
+
+        if ($existing) {
+            return $existing->id;
+        }
+
+        return Brand::create(['name' => $trimmed])->id;
+    }
+
+    private function resolveVehicleModelId(?string $name, ?int $brandId): ?int
+    {
+        if (blank($name) || ! $brandId) {
+            return null;
+        }
+
+        $trimmed = trim($name);
+        $existing = VehicleModel::query()
+            ->where('brand_id', $brandId)
+            ->whereRaw('LOWER(name) = ?', [strtolower($trimmed)])
+            ->first();
+
+        if ($existing) {
+            return $existing->id;
+        }
+
+        return VehicleModel::create([
+            'brand_id' => $brandId,
+            'name' => $trimmed,
+        ])->id;
     }
 }

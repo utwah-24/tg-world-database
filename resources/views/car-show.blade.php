@@ -18,7 +18,7 @@
     <h1>{{ $car->car_name }}</h1>
 
     @if($car->car_pic)
-        <img src="{{ asset($car->car_pic) }}" alt="{{ $car->car_name }}">
+        <img src="{{ \App\Models\Car::mediaUrl(is_array($car->car_pic) ? $car->car_pic[0] : $car->car_pic) }}" alt="{{ $car->car_name }}">
     @else
         <p>No image found for this car.</p>
     @endif

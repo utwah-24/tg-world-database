@@ -11,9 +11,13 @@ class Logo extends Model
         'path',
     ];
 
+    /** Always include the resolved URL alongside the raw path. */
+    protected $appends = ['logo_url'];
+
     /**
      * Returns a fully-encoded absolute URL for the logo image.
-     * Used by Filament's ImageColumn via the 'logo_url' attribute name.
+     * Uses MEDIA_BASE_URL so cPanel deployments serving from the project root
+     * automatically include the required /public prefix.
      */
     public function getLogoUrlAttribute(): ?string
     {
@@ -21,10 +25,9 @@ class Logo extends Model
             return null;
         }
 
-        $base     = rtrim(config('app.url'), '/');
-        $segments = explode('/', ltrim($this->path, '/'));
-        $encoded  = array_map('rawurlencode', $segments);
+        $base = config('app.media_url');
+        $segments = array_map('rawurlencode', explode('/', ltrim($this->path, '/')));
 
-        return $base . '/' . implode('/', $encoded);
+        return $base.'/'.implode('/', $segments);
     }
 }

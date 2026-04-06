@@ -3,15 +3,21 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\CarResource\Pages;
+use App\Models\Brand;
 use App\Models\Car;
+use App\Models\Company;
+use App\Models\VehicleModel;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rules\Unique;
 
 class CarResource extends Resource
 {
@@ -21,13 +27,30 @@ class CarResource extends Resource
 
     protected static ?string $navigationLabel = 'Cars';
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['company', 'brand', 'vehicleModel']);
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\TextInput::make('car_name')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->unique(
+                        table: 'cars',
+                        column: 'car_name',
+                        ignoreRecord: true,
+                        modifyRuleUsing: function (Unique $rule, Get $get): Unique {
+                            $year = $get('year');
+
+                            return $year === null || $year === ''
+                                ? $rule->whereNull('year')
+                                : $rule->where('year', $year);
+                        },
+                    ),
 
                 Forms\Components\TextInput::make('year')
                     ->numeric()
@@ -42,34 +65,122 @@ class CarResource extends Resource
 
                 Forms\Components\Select::make('type')
                     ->options([
-                        'truck'       => 'Truck',
-                        'suv'         => 'SUV',
+                        'truck' => 'Truck',
+                        'suv' => 'SUV',
                         'third_party' => 'Third Party',
-                        'sedan'       => 'Sedan',
-                        'van'         => 'Van',
-                        'pickup'      => 'Pickup',
+                        'sedan' => 'Sedan',
+                        'van' => 'Van',
+                        'pickup' => 'Pickup',
                     ])
                     ->searchable(),
 
                 Forms\Components\Select::make('condition')
                     ->options([
-                        'new'         => 'New',
+                        'new' => 'New',
                         'second_hand' => 'Second Hand',
                         'third_party' => 'Third Party',
                     ])
                     ->searchable(),
 
-                Forms\Components\TextInput::make('company')
+                Forms\Components\TextInput::make('company_name')
+                    ->label('Company')
+                    ->placeholder('Type company name…')
+                    ->datalist(fn (): array => Company::orderBy('name')->pluck('name')->toArray())
                     ->maxLength(255)
-                    ->placeholder('e.g. Toyota, Ford, BMW')
-                    ->default(null),
+                    ->live(debounce: 400)
+                    ->afterStateUpdated(function (?string $state, Set $set): void {
+                        $name = trim((string) $state);
+                        if ($name === '') {
+                            $set('company_logo', null);
 
-                Forms\Components\TextInput::make('brand')
+                            return;
+                        }
+                        // Existing company → use saved logo in preview; clear upload so FilePond does not fight it
+                        if (Company::whereRaw('LOWER(name) = ?', [strtolower($name)])->exists()) {
+                            $set('company_logo', null);
+                        }
+                    }),
+
+                Forms\Components\Placeholder::make('company_logo_preview')
+                    ->label('Company logo preview')
+                    ->content(function (Get $get): HtmlString {
+                        $name = trim((string) ($get('company_name') ?? ''));
+                        if ($name === '') {
+                            return new HtmlString(
+                                '<em style="color:#aaa;">Type a company name to load its logo from the directory, or upload one below for a new company.</em>'
+                            );
+                        }
+
+                        $company = Company::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+
+                        if (! $company) {
+                            return new HtmlString(
+                                '<em style="color:#aaa;">New company — add a logo below if you want one.</em>'
+                            );
+                        }
+
+                        if (! $company->logo) {
+                            return new HtmlString(
+                                '<em style="color:#aaa;">This company has no logo on file yet — upload below.</em>'
+                            );
+                        }
+
+                        return new HtmlString(
+                            '<img src="'.e(Car::mediaUrl($company->logo)).'" alt="" style="height:80px;max-width:240px;object-fit:contain;border-radius:4px;">'
+                        );
+                    }),
+
+                Forms\Components\FileUpload::make('company_logo')
+                    ->label('Upload / Change Company Logo')
+                    ->helperText('For an existing company, the logo above fills automatically. Upload here only to add or replace the logo.')
+                    ->image()
+                    ->disk('public_root')
+                    ->directory('TGworld/logos')
+                    ->imagePreviewHeight('80'),
+
+                Forms\Components\Hidden::make('company_id'),
+
+                Forms\Components\TextInput::make('brand_name')
+                    ->label('Brand')
+                    ->placeholder('Type or pick from suggestions…')
+                    ->datalist(fn (): array => Brand::orderBy('name')->pluck('name')->toArray())
                     ->maxLength(255)
-                    ->placeholder('e.g. Landcruiser, Ranger, X3')
-                    ->default(null),
+                    ->live(debounce: 400)
+                    ->afterStateUpdated(function (Set $set): void {
+                        $set('model_name', null);
+                    })
+                    ->helperText('Creates the brand on first save. Changing brand clears the model field.'),
+
+                Forms\Components\TextInput::make('model_name')
+                    ->label('Model')
+                    ->placeholder('Type or pick from suggestions…')
+                    ->datalist(function (Get $get): array {
+                        $brandName = trim((string) ($get('brand_name') ?? ''));
+                        if ($brandName === '') {
+                            return [];
+                        }
+
+                        $brand = Brand::whereRaw('LOWER(name) = ?', [strtolower($brandName)])->first();
+
+                        if (! $brand) {
+                            return [];
+                        }
+
+                        return VehicleModel::query()
+                            ->where('brand_id', $brand->id)
+                            ->orderBy('name')
+                            ->pluck('name')
+                            ->toArray();
+                    })
+                    ->maxLength(255)
+                    ->helperText('Suggestions only include models for the brand above. New names are created for that brand when you save.'),
 
                 Forms\Components\Textarea::make('car_description')
+                    ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('registration')
+                    ->label('Registered')
+                    ->helperText('Toggle on if this car is registered, off if unregistered.')
                     ->columnSpanFull(),
 
                 Forms\Components\Toggle::make('is_sold')
@@ -101,15 +212,11 @@ class CarResource extends Resource
                             ->schema([
                                 Forms\Components\Placeholder::make('preview')
                                     ->label('')
-                    ->content(fn (Get $get): HtmlString => new HtmlString(
-                        $get('path')
-                            ? '<img src="'
-                                . request()->getSchemeAndHttpHost()
-                                . '/'
-                                . implode('/', array_map('rawurlencode', explode('/', ltrim($get('path'), '/'))))
-                                . '" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
-                            : '<em style="color:#aaa;">No preview</em>'
-                    )),
+                                    ->content(fn (Get $get): HtmlString => new HtmlString(
+                                        $get('path')
+                                            ? '<img src="'.e(Car::mediaUrl($get('path'))).'" style="height:120px;width:160px;object-fit:cover;border-radius:6px;">'
+                                            : '<em style="color:#aaa;">No preview</em>'
+                                    )),
                                 Forms\Components\Hidden::make('path'),
                             ])
                             ->addable(false)
@@ -164,38 +271,45 @@ class CarResource extends Resource
                     ->badge()
                     ->searchable()
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'truck'       => 'Truck',
-                        'suv'         => 'SUV',
+                        'truck' => 'Truck',
+                        'suv' => 'SUV',
                         'third_party' => 'Third Party',
-                        'sedan'       => 'Sedan',
-                        'van'         => 'Van',
-                        'pickup'      => 'Pickup',
-                        default       => '—',
+                        'sedan' => 'Sedan',
+                        'van' => 'Van',
+                        'pickup' => 'Pickup',
+                        default => '—',
                     })
                     ->color(fn ($state) => match ($state) {
-                        'truck'       => 'warning',
-                        'suv'         => 'success',
+                        'truck' => 'warning',
+                        'suv' => 'success',
                         'third_party' => 'info',
-                        'sedan'       => 'primary',
-                        'van'         => 'danger',
-                        'pickup'      => 'gray',
-                        default       => 'gray',
+                        'sedan' => 'primary',
+                        'van' => 'danger',
+                        'pickup' => 'gray',
+                        default => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('condition')
                     ->badge()
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'new'         => 'New',
+                        'new' => 'New',
                         'second_hand' => 'Second Hand',
                         'third_party' => 'Third Party',
-                        default       => '—',
+                        default => '—',
                     })
                     ->color(fn ($state) => match ($state) {
-                        'new'         => 'success',
+                        'new' => 'success',
                         'second_hand' => 'warning',
                         'third_party' => 'info',
-                        default       => 'gray',
+                        default => 'gray',
                     }),
+
+                Tables\Columns\TextColumn::make('registration')
+                    ->label('Registration')
+                    ->badge()
+                    ->state(fn (Car $record): string => $record->registration === 'registered' ? 'Registered' : 'Unregistered')
+                    ->color(fn (Car $record): string => $record->registration === 'registered' ? 'success' : 'gray')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('is_sold')
                     ->label('Sold for Now')
@@ -214,20 +328,33 @@ class CarResource extends Resource
                         }
 
                         return $record->arrival_date
-                            ? '🕐 Arrives ' . Carbon::parse($record->arrival_date)->format('d M Y')
+                            ? '🕐 Arrives '.Carbon::parse($record->arrival_date)->format('d M Y')
                             : 'Coming Soon';
                     })
                     ->placeholder('—')
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('company')
+                Tables\Columns\ImageColumn::make('company_logo_url')
+                    ->label('Logo')
+                    ->getStateUsing(fn (Car $record): ?string => $record->company_logo_url)
+                    ->height(36)
+                    ->width(60)
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('company.name')
                     ->label('Company')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('brand')
+                Tables\Columns\TextColumn::make('brand.name')
                     ->label('Brand')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('vehicleModel.name')
+                    ->label('Model')
                     ->searchable()
                     ->sortable()
                     ->toggleable(),
@@ -245,17 +372,17 @@ class CarResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
-                        'truck'       => 'Truck',
-                        'suv'         => 'SUV',
+                        'truck' => 'Truck',
+                        'suv' => 'SUV',
                         'third_party' => 'Third Party',
-                        'sedan'       => 'Sedan',
-                        'van'         => 'Van',
-                        'pickup'      => 'Pickup',
+                        'sedan' => 'Sedan',
+                        'van' => 'Van',
+                        'pickup' => 'Pickup',
                     ]),
 
                 Tables\Filters\SelectFilter::make('condition')
                     ->options([
-                        'new'         => 'New',
+                        'new' => 'New',
                         'second_hand' => 'Second Hand',
                         'third_party' => 'Third Party',
                     ]),
@@ -279,9 +406,9 @@ class CarResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListCars::route('/'),
+            'index' => Pages\ListCars::route('/'),
             'create' => Pages\CreateCar::route('/create'),
-            'edit'   => Pages\EditCar::route('/{record}/edit'),
+            'edit' => Pages\EditCar::route('/{record}/edit'),
         ];
     }
 }
