@@ -255,6 +255,33 @@ class SwaggerController extends Controller
                         ],
                     ],
                 ],
+                '/api/companies' => [
+                    'get' => [
+                        'tags' => ['Car Companies'],
+                        'summary' => 'Get all car companies',
+                        'description' => 'Returns every company in the directory with its name and logo URL. The list is live — when a new company is added (or its logo updated) via the admin panel, it appears here immediately.',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Companies list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => [
+                                                        '$ref' => '#/components/schemas/CarCompany',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 '/api/third-party' => [
                     'get' => [
                         'tags' => ['Third party'],
@@ -375,6 +402,14 @@ class SwaggerController extends Controller
                         'properties' => [
                             'name' => ['type' => 'string', 'example' => 'SUV'],
                             'slug' => ['type' => 'string', 'example' => 'suv'],
+                        ],
+                    ],
+                    'CarCompany' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'company_id'        => ['type' => 'integer', 'example' => 1],
+                            'company_label'     => ['type' => 'string', 'example' => 'Toyota'],
+                            'company_logo_path' => ['type' => 'string', 'nullable' => true, 'description' => 'Fully-resolved absolute URL of the company logo', 'example' => 'https://tgworld.e-saloon.online/public/TGworld/logos/toyota.svg'],
                         ],
                     ],
                     'Logo' => [

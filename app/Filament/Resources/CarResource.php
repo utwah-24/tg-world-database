@@ -63,16 +63,18 @@ class CarResource extends Resource
                     ->maxLength(255)
                     ->default(null),
 
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'truck' => 'Truck',
-                        'suv' => 'SUV',
-                        'third_party' => 'Third Party',
-                        'sedan' => 'Sedan',
-                        'van' => 'Van',
+                Forms\Components\TextInput::make('type')
+                    ->label('Type')
+                    ->placeholder('e.g. Truck, SUV, Sedan…')
+                    ->datalist([
+                        'truck'  => 'Truck',
+                        'suv'    => 'SUV',
+                        'sedan'  => 'Sedan',
+                        'van'    => 'Van',
                         'pickup' => 'Pickup',
                     ])
-                    ->searchable(),
+                    ->helperText('Pick from the list or type a new vehicle type — it is saved as-is when you click Save changes.')
+                    ->maxLength(100),
 
                 Forms\Components\Select::make('condition')
                     ->options([
@@ -270,23 +272,23 @@ class CarResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->searchable()
-                    ->formatStateUsing(fn ($state) => match ($state) {
-                        'truck' => 'Truck',
-                        'suv' => 'SUV',
+                    ->formatStateUsing(fn ($state) => match (strtolower((string) $state)) {
+                        'truck'       => 'Truck',
+                        'suv'         => 'SUV',
                         'third_party' => 'Third Party',
-                        'sedan' => 'Sedan',
-                        'van' => 'Van',
-                        'pickup' => 'Pickup',
-                        default => '—',
+                        'sedan'       => 'Sedan',
+                        'van'         => 'Van',
+                        'pickup'      => 'Pickup',
+                        default       => ucwords(str_replace('_', ' ', (string) $state)),
                     })
-                    ->color(fn ($state) => match ($state) {
-                        'truck' => 'warning',
-                        'suv' => 'success',
+                    ->color(fn ($state) => match (strtolower((string) $state)) {
+                        'truck'       => 'warning',
+                        'suv'         => 'success',
                         'third_party' => 'info',
-                        'sedan' => 'primary',
-                        'van' => 'danger',
-                        'pickup' => 'gray',
-                        default => 'gray',
+                        'sedan'       => 'primary',
+                        'van'         => 'danger',
+                        'pickup'      => 'gray',
+                        default       => 'gray',
                     }),
 
                 Tables\Columns\TextColumn::make('condition')

@@ -2,12 +2,25 @@
 
 namespace App\Models;
 
+use App\Models\Car;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
     protected $fillable = ['name', 'logo'];
+
+    /** Always include the resolved logo URL alongside the raw path. */
+    protected $appends = ['logo_url'];
+
+    /**
+     * Returns a fully-encoded absolute URL for the company logo.
+     * Uses MEDIA_BASE_URL so cPanel deployments include the /public prefix.
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo ? Car::mediaUrl($this->logo) : null;
+    }
 
     protected static function booted(): void
     {
