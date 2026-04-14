@@ -21,6 +21,7 @@ class Admin extends Authenticatable implements FilamentUser, HasName
 
     protected $hidden = [
         'password',
+        'remember_token',
         'api_token',
     ];
 

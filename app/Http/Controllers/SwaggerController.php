@@ -371,8 +371,8 @@ class SwaggerController extends Controller
                             'type' => [
                                 'type' => 'string',
                                 'nullable' => true,
-                                'enum' => ['truck', 'suv', 'third_party', 'sedan', 'van', 'pickup'],
-                                'example' => 'suv',
+                                'description' => 'Free-text vehicle type (DB column is VARCHAR; e.g. suv, Crossover SUV)',
+                                'example' => 'Crossover SUV',
                             ],
                             'condition' => [
                                 'type' => 'string',
@@ -407,8 +407,8 @@ class SwaggerController extends Controller
                     'CarCompany' => [
                         'type' => 'object',
                         'properties' => [
-                            'company_id'        => ['type' => 'integer', 'example' => 1],
-                            'company_label'     => ['type' => 'string', 'example' => 'Toyota'],
+                            'company_id' => ['type' => 'integer', 'example' => 1],
+                            'company_label' => ['type' => 'string', 'example' => 'Toyota'],
                             'company_logo_path' => ['type' => 'string', 'nullable' => true, 'description' => 'Fully-resolved absolute URL of the company logo', 'example' => 'https://tgworld.e-saloon.online/public/TGworld/logos/toyota.svg'],
                         ],
                     ],

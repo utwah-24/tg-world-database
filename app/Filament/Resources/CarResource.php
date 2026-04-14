@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,16 +66,17 @@ class CarResource extends Resource
 
                 Forms\Components\TextInput::make('type')
                     ->label('Type')
-                    ->placeholder('e.g. Truck, SUV, Sedan…')
+                    ->placeholder('e.g. Truck, SUV, Crossover SUV…')
                     ->datalist([
-                        'truck'  => 'Truck',
-                        'suv'    => 'SUV',
-                        'sedan'  => 'Sedan',
-                        'van'    => 'Van',
+                        'truck' => 'Truck',
+                        'suv' => 'SUV',
+                        'sedan' => 'Sedan',
+                        'van' => 'Van',
                         'pickup' => 'Pickup',
+                        'crossover suv' => 'Crossover SUV',
                     ])
-                    ->helperText('Pick from the list or type a new vehicle type — it is saved as-is when you click Save changes.')
-                    ->maxLength(100),
+                    ->helperText('Pick a suggestion or type any vehicle type. Stored as plain text (VARCHAR) — matches your database column.')
+                    ->maxLength(255),
 
                 Forms\Components\Select::make('condition')
                     ->options([
@@ -250,6 +252,8 @@ class CarResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
+            ->persistSortInSession(false)
             ->columns([
                 Tables\Columns\ImageColumn::make('car_pic_urls')
                     ->label('Photos')
@@ -273,22 +277,29 @@ class CarResource extends Resource
                     ->badge()
                     ->searchable()
                     ->formatStateUsing(fn ($state) => match (strtolower((string) $state)) {
-                        'truck'       => 'Truck',
-                        'suv'         => 'SUV',
+                        'truck' => 'Truck',
+                        'suv' => 'SUV',
                         'third_party' => 'Third Party',
-                        'sedan'       => 'Sedan',
-                        'van'         => 'Van',
-                        'pickup'      => 'Pickup',
-                        default       => ucwords(str_replace('_', ' ', (string) $state)),
+                        'sedan' => 'Sedan',
+                        'van' => 'Van',
+                        'pickup' => 'Pickup',
+                        default => ucwords(str_replace('_', ' ', (string) $state)),
                     })
-                    ->color(fn ($state) => match (strtolower((string) $state)) {
-                        'truck'       => 'warning',
-                        'suv'         => 'success',
-                        'third_party' => 'info',
-                        'sedan'       => 'primary',
-                        'van'         => 'danger',
-                        'pickup'      => 'gray',
-                        default       => 'gray',
+                    ->weight(fn ($state) => self::isCustomVehicleType($state) ? FontWeight::Bold : null)
+                    ->color(function ($state) {
+                        if (self::isCustomVehicleType($state)) {
+                            return 'info';
+                        }
+
+                        return match (strtolower((string) $state)) {
+                            'truck' => 'warning',
+                            'suv' => 'success',
+                            'third_party' => 'info',
+                            'sedan' => 'primary',
+                            'van' => 'danger',
+                            'pickup' => 'gray',
+                            default => 'gray',
+                        };
                     }),
 
                 Tables\Columns\TextColumn::make('condition')
@@ -372,15 +383,20 @@ class CarResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'truck' => 'Truck',
-                        'suv' => 'SUV',
-                        'third_party' => 'Third Party',
-                        'sedan' => 'Sedan',
-                        'van' => 'Van',
-                        'pickup' => 'Pickup',
-                    ]),
+                Tables\Filters\Filter::make('type')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Vehicle type')
+                            ->placeholder('Contains… e.g. SUV, Crossover'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+
+                        return $query->when(
+                            $value !== '',
+                            fn (Builder $q) => $q->where('type', 'like', '%'.addcslashes($value, '%_\\').'%')
+                        );
+                    }),
 
                 Tables\Filters\SelectFilter::make('condition')
                     ->options([
@@ -412,5 +428,19 @@ class CarResource extends Resource
             'create' => Pages\CreateCar::route('/create'),
             'edit' => Pages\EditCar::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * True when the stored type is not one of the preset slugs (datalist / legacy enum).
+     */
+    private static function isCustomVehicleType(mixed $state): bool
+    {
+        if ($state === null || $state === '') {
+            return false;
+        }
+
+        $normalized = strtolower(trim((string) $state));
+
+        return ! in_array($normalized, ['truck', 'suv', 'third_party', 'sedan', 'van', 'pickup'], true);
     }
 }
