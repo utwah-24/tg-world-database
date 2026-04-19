@@ -23,6 +23,7 @@ class Car extends Model
         'company_label',
         'company_logo_path',
         'condition',
+        'color',
         'vehicle_model_id',
         'model_label',
         'is_coming_soon',
@@ -133,5 +134,44 @@ class Car extends Model
         $segments = array_map('rawurlencode', explode('/', ltrim($path, '/')));
 
         return $base.'/'.implode('/', $segments);
+    }
+
+    /**
+     * Leading digits from stored price text for the admin form (user enters numbers only).
+     */
+    public static function carPriceDigitsForForm(?string $stored): ?string
+    {
+        if ($stored === null || trim((string) $stored) === '') {
+            return null;
+        }
+
+        if (preg_match('/^\s*(\d+)/', (string) $stored, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Persist "{n} Million Tshs" from numeric-only form input.
+     */
+    public static function carPriceFromFormInput(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', (string) $value);
+        if ($digits === '') {
+            return null;
+        }
+
+        $digits = ltrim($digits, '0');
+
+        if ($digits === '') {
+            $digits = '0';
+        }
+
+        return $digits.' Million Tshs';
     }
 }

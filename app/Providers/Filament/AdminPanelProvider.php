@@ -31,9 +31,10 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->brandName('TG World Admin')
-            ->brandLogo(asset('logo-dark.jpeg'))
-            ->brandLogoHeight('2.5rem')
+            ->brandName('')
+            ->brandLogo(asset('tg-world-brand-logo.png'))
+            ->darkModeBrandLogo(asset('tg-world-brand-logo.png'))
+            ->brandLogoHeight('3rem')
             ->spa()
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->pages([

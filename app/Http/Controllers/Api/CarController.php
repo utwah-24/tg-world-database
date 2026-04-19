@@ -91,6 +91,7 @@ class CarController extends Controller
             'car_description' => $car->car_description,
             'type' => $car->type,
             'condition' => $car->condition,
+            'color' => $car->color,
             'company_id' => $car->company_id,
             'company' => $car->company?->name ?? $car->company_label,
             'company_logo' => $car->company_logo_url,

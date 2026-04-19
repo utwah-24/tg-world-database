@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Car;
 use Filament\Widgets\Widget;
 
+/** Latest cars on the dashboard; the Blade view uses Livewire polling to refresh the list. */
 class RecentCarsWidget extends Widget
 {
     private const SESSION_KEY = 'filament.recent_cars_widget_hidden';

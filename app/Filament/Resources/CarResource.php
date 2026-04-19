@@ -14,6 +14,7 @@ use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -61,8 +62,13 @@ class CarResource extends Resource
                     ->default(null),
 
                 Forms\Components\TextInput::make('car_price')
-                    ->maxLength(255)
-                    ->default(null),
+                    ->label('Car price')
+                    ->suffix('Million Tshs')
+                    ->placeholder('e.g. 295')
+                    ->maxLength(12)
+                    ->extraInputAttributes(['inputmode' => 'numeric', 'pattern' => '[0-9]*', 'autocomplete' => 'off'])
+                    ->rules(['nullable', 'regex:/^[0-9]*$/'])
+                    ->helperText('Type digits only (millions). “Million Tshs” is added when you save.'),
 
                 Forms\Components\TextInput::make('type')
                     ->label('Type')
@@ -85,6 +91,12 @@ class CarResource extends Resource
                         'third_party' => 'Third Party',
                     ])
                     ->searchable(),
+
+                Forms\Components\TextInput::make('color')
+                    ->label('Color')
+                    ->maxLength(255)
+                    ->placeholder('e.g. Pearl White, Midnight Black')
+                    ->default(null),
 
                 Forms\Components\TextInput::make('company_name')
                     ->label('Company')
@@ -270,6 +282,11 @@ class CarResource extends Resource
                     ->sortable()
                     ->toggleable(),
 
+                Tables\Columns\TextColumn::make('color')
+                    ->searchable()
+                    ->placeholder('—')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('car_price')
                     ->searchable(),
 
@@ -382,7 +399,64 @@ class CarResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->filtersLayout(FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(2)
             ->filters([
+                Tables\Filters\Filter::make('car_name')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Car name')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+
+                        return $query->where('car_name', 'like', '%'.addcslashes($value, '%_\\').'%');
+                    }),
+
+                Tables\Filters\Filter::make('year')
+                    ->form([
+                        Forms\Components\TextInput::make('from')
+                            ->label('Year from')
+                            ->numeric()
+                            ->minValue(1900)
+                            ->maxValue((int) date('Y') + 1),
+                        Forms\Components\TextInput::make('until')
+                            ->label('Year to')
+                            ->numeric()
+                            ->minValue(1900)
+                            ->maxValue((int) date('Y') + 1),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $q) => $q->where('year', '>=', (int) $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $q) => $q->where('year', '<=', (int) $data['until'])
+                            );
+                    }),
+
+                Tables\Filters\Filter::make('car_price')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Price')
+                            ->placeholder('Contains… e.g. 295'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+
+                        return $query->where('car_price', 'like', '%'.addcslashes($value, '%_\\').'%');
+                    }),
+
                 Tables\Filters\Filter::make('type')
                     ->form([
                         Forms\Components\TextInput::make('value')
@@ -404,6 +478,219 @@ class CarResource extends Resource
                         'second_hand' => 'Second Hand',
                         'third_party' => 'Third Party',
                     ]),
+
+                Tables\Filters\Filter::make('color')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Color')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+
+                        return $query->where('color', 'like', '%'.addcslashes($value, '%_\\').'%');
+                    }),
+
+                Tables\Filters\SelectFilter::make('company_id')
+                    ->label('Company')
+                    ->relationship('company', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('brand_id')
+                    ->label('Brand')
+                    ->relationship('brand', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\SelectFilter::make('vehicle_model_id')
+                    ->label('Model')
+                    ->relationship('vehicleModel', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                Tables\Filters\Filter::make('company_or_label')
+                    ->label('Company name (text)')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Matches company or snapshot label')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+                        $like = '%'.addcslashes($value, '%_\\').'%';
+
+                        return $query->where(function (Builder $q) use ($like): void {
+                            $q->whereHas('company', fn (Builder $q2) => $q2->where('name', 'like', $like))
+                                ->orWhere('company_label', 'like', $like);
+                        });
+                    }),
+
+                Tables\Filters\Filter::make('brand_or_label')
+                    ->label('Brand name (text)')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Matches brand or snapshot label')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+                        $like = '%'.addcslashes($value, '%_\\').'%';
+
+                        return $query->where(function (Builder $q) use ($like): void {
+                            $q->whereHas('brand', fn (Builder $q2) => $q2->where('name', 'like', $like))
+                                ->orWhere('brand_label', 'like', $like);
+                        });
+                    }),
+
+                Tables\Filters\Filter::make('model_or_label')
+                    ->label('Model name (text)')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Matches model or snapshot label')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+                        $like = '%'.addcslashes($value, '%_\\').'%';
+
+                        return $query->where(function (Builder $q) use ($like): void {
+                            $q->whereHas('vehicleModel', fn (Builder $q2) => $q2->where('name', 'like', $like))
+                                ->orWhere('model_label', 'like', $like);
+                        });
+                    }),
+
+                Tables\Filters\Filter::make('car_description')
+                    ->form([
+                        Forms\Components\TextInput::make('value')
+                            ->label('Description')
+                            ->placeholder('Contains…'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = trim((string) ($data['value'] ?? ''));
+                        if ($value === '') {
+                            return $query;
+                        }
+
+                        return $query->where('car_description', 'like', '%'.addcslashes($value, '%_\\').'%');
+                    }),
+
+                Tables\Filters\SelectFilter::make('registration')
+                    ->options([
+                        'registered' => 'Registered',
+                        'unregistered' => 'Unregistered',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('is_sold')
+                    ->label('Availability')
+                    ->options([
+                        'sold' => 'Sold',
+                        'available' => 'Available',
+                    ]),
+
+                Tables\Filters\Filter::make('coming_soon')
+                    ->label('Coming soon')
+                    ->form([
+                        Forms\Components\Select::make('value')
+                            ->label('Status')
+                            ->options([
+                                'set' => 'Coming soon only',
+                                'not_set' => 'Not coming soon',
+                            ])
+                            ->placeholder('All'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $v = $data['value'] ?? null;
+                        if ($v === 'set') {
+                            return $query->where('is_coming_soon', 'set');
+                        }
+                        if ($v === 'not_set') {
+                            return $query->where(function (Builder $q): void {
+                                $q->whereNull('is_coming_soon')
+                                    ->orWhere('is_coming_soon', '!=', 'set');
+                            });
+                        }
+
+                        return $query;
+                    }),
+
+                Tables\Filters\Filter::make('arrival_date')
+                    ->label('Arrival date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Arrives from')
+                            ->native(false),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Arrives until')
+                            ->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $q) => $q->whereDate('arrival_date', '>=', $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $q) => $q->whereDate('arrival_date', '<=', $data['until'])
+                            );
+                    }),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->label('Added (created)')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Created from')
+                            ->native(false),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Created until')
+                            ->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $q) => $q->whereDate('created_at', '>=', $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $q) => $q->whereDate('created_at', '<=', $data['until'])
+                            );
+                    }),
+
+                Tables\Filters\Filter::make('updated_at')
+                    ->label('Last updated')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('Updated from')
+                            ->native(false),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Updated until')
+                            ->native(false),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $q) => $q->whereDate('updated_at', '>=', $data['from'])
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $q) => $q->whereDate('updated_at', '<=', $data['until'])
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

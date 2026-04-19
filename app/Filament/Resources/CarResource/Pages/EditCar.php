@@ -57,6 +57,8 @@ class EditCar extends EditRecord
             ? VehicleModel::find($data['vehicle_model_id'])?->name
             : null;
 
+        $data['car_price'] = Car::carPriceDigitsForForm($data['car_price'] ?? null);
+
         // Convert string DB values back to booleans so the Toggle components render correctly
         $data['is_coming_soon'] = $data['is_coming_soon'] === 'set';
         $data['is_sold'] = $data['is_sold'] === 'sold';
@@ -78,6 +80,8 @@ class EditCar extends EditRecord
         $data['car_pic'] = array_merge($existing, $new);
 
         unset($data['car_pic_existing'], $data['car_pic_new']);
+
+        $data['car_price'] = Car::carPriceFromFormInput($data['car_price'] ?? null);
 
         // Resolve or create the company from the typed name
         $data['company_id'] = $this->resolveCompanyId(

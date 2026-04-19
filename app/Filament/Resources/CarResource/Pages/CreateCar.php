@@ -19,6 +19,8 @@ class CreateCar extends CreateRecord
 
         unset($data['car_pic_existing'], $data['car_pic_new']);
 
+        $data['car_price'] = Car::carPriceFromFormInput($data['car_price'] ?? null);
+
         // Resolve or create the company from the typed name
         $data['company_id'] = $this->resolveCompanyId(
             $data['company_name'] ?? null,

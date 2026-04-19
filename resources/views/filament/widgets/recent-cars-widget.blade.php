@@ -1,4 +1,6 @@
 <x-filament-widgets::widget>
+    {{-- Re-fetch latest cars on an interval so new vehicles appear without a full page reload. --}}
+    <div wire:poll.5s.visible class="w-full">
     @php $cars = $recentListHidden ? collect() : $this->getRecentCars(); @endphp
     <x-filament::section>
         <x-slot name="heading">
@@ -101,4 +103,5 @@
             </div>
         @endif
     </x-filament::section>
+    </div>
 </x-filament-widgets::widget>
