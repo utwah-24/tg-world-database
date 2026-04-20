@@ -98,6 +98,18 @@ class CarResource extends Resource
                     ->placeholder('e.g. Pearl White, Midnight Black')
                     ->default(null),
 
+                Forms\Components\TextInput::make('chassis')
+                    ->label('Chassis')
+                    ->maxLength(255)
+                    ->placeholder('e.g. VIN / chassis number')
+                    ->default(null),
+
+                Forms\Components\TextInput::make('mileage')
+                    ->label('Mileage')
+                    ->maxLength(255)
+                    ->placeholder('e.g. 85 000 km')
+                    ->default(null),
+
                 Forms\Components\TextInput::make('company_name')
                     ->label('Company')
                     ->placeholder('Type company name…')
@@ -286,6 +298,16 @@ class CarResource extends Resource
                     ->searchable()
                     ->placeholder('—')
                     ->toggleable(),
+
+                Tables\Columns\TextColumn::make('chassis')
+                    ->searchable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('mileage')
+                    ->searchable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('car_price')
                     ->searchable(),

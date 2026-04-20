@@ -24,6 +24,8 @@ class Car extends Model
         'company_logo_path',
         'condition',
         'color',
+        'chassis',
+        'mileage',
         'vehicle_model_id',
         'model_label',
         'is_coming_soon',
