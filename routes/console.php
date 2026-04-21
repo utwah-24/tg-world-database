@@ -25,9 +25,9 @@ Artisan::command('cars:sync-from-folders', function () {
     }
 
     $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
-    $imageOrder      = ['back', 'front', 'interior', 'side', 'engine'];
-    $typeMap         = ['SUV' => 'suv', 'TRUCKS' => 'truck', 'TRUCK' => 'truck'];
-    $synced          = 0;
+    $imageOrder = ['back', 'front', 'interior', 'side', 'engine'];
+    $typeMap = ['SUV' => 'suv', 'TRUCKS' => 'truck', 'TRUCK' => 'truck'];
+    $synced = 0;
 
     $command = $this;
 
@@ -50,7 +50,7 @@ Artisan::command('cars:sync-from-folders', function () {
         $imagePaths = collect(File::files($folder))
             ->filter(fn ($file): bool => in_array(strtolower($file->getExtension()), $imageExtensions, true))
             ->sortBy(function ($file) use ($imageOrder): array {
-                $name     = strtolower($file->getFilename());
+                $name = strtolower($file->getFilename());
                 $priority = collect($imageOrder)->search(fn (string $k): bool => str_contains($name, $k));
 
                 return [$priority === false ? count($imageOrder) : $priority, $name];
@@ -62,10 +62,10 @@ Artisan::command('cars:sync-from-folders', function () {
         Car::updateOrCreate(
             ['car_name' => $carName],
             [
-                'car_pic'         => $imagePaths ?: null,
-                'car_price'       => $price,
+                'car_pic' => $imagePaths ?: null,
+                'car_price' => $price,
                 'car_description' => $description,
-                'type'            => $type,
+                'type' => $type,
             ],
         );
 
@@ -74,7 +74,7 @@ Artisan::command('cars:sync-from-folders', function () {
     };
 
     foreach (File::directories($basePath) as $topFolder) {
-        $topName  = basename($topFolder);
+        $topName = basename($topFolder);
         $topUpper = strtoupper($topName);
 
         if ($topUpper === 'THIRD PARTY') {

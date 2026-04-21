@@ -45,6 +45,7 @@ class CreateCar extends CreateRecord
         // Convert toggle booleans to string values for the database
         $data['is_coming_soon'] = ! empty($data['arrival_date']) ? 'set' : null;
         $data['is_sold'] = ! empty($data['is_sold']) ? 'sold' : 'available';
+        $data['sold_at'] = $data['is_sold'] === 'sold' ? now() : null;
         $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
 
         return $data;

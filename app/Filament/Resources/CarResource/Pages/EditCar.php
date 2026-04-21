@@ -106,7 +106,17 @@ class EditCar extends EditRecord
 
         // Convert toggle booleans to string values for the database
         $data['is_coming_soon'] = ! empty($data['arrival_date']) ? 'set' : null;
-        $data['is_sold'] = ! empty($data['is_sold']) ? 'sold' : 'available';
+
+        $wasSold = $this->record->is_sold === 'sold';
+        $willBeSold = ! empty($data['is_sold']);
+        $data['is_sold'] = $willBeSold ? 'sold' : 'available';
+
+        if ($willBeSold && ! $wasSold) {
+            $data['sold_at'] = now();
+        } elseif (! $willBeSold) {
+            $data['sold_at'] = null;
+        }
+
         $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
 
         return $data;
