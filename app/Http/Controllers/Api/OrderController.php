@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class OrderController extends Controller
+{
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'car_name' => ['required', 'string', 'max:255'],
+            'year'     => ['nullable', 'string', 'max:4'],
+            'invoice'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'receipt'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+        ]);
+
+        $invoicePath = null;
+        $receiptPath = null;
+
+        if ($request->hasFile('invoice')) {
+            $invoicePath = $request->file('invoice')->store('orders/invoices', 'public');
+        }
+
+        if ($request->hasFile('receipt')) {
+            $receiptPath = $request->file('receipt')->store('orders/receipts', 'public');
+        }
+
+        $order = Order::create([
+            'car_name'   => $validated['car_name'],
+            'year'       => $validated['year'] ?? null,
+            'order_date' => now()->toDateString(),
+            'invoice'    => $invoicePath,
+            'receipt'    => $receiptPath,
+        ]);
+
+        return response()->json([
+            'message' => 'Order submitted successfully.',
+            'data'    => $this->formatOrder($order),
+        ], 201);
+    }
+
+    public function index(): JsonResponse
+    {
+        $orders = Order::orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'data' => $orders->map(fn (Order $order) => $this->formatOrder($order)),
+        ]);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $order = Order::find($id);
+
+        if (! $order) {
+            return response()->json(['message' => 'Order not found.'], 404);
+        }
+
+        return response()->json([
+            'data' => $this->formatOrder($order),
+        ]);
+    }
+
+    private function formatOrder(Order $order): array
+    {
+        return [
+            'id'         => $order->id,
+            'order_date' => $order->order_date?->toDateString(),
+            'car_name'   => $order->car_name,
+            'year'       => $order->year,
+            'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
+            'receipt'    => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,
+            'created_at' => $order->created_at,
+            'updated_at' => $order->updated_at,
+        ];
+    }
+}

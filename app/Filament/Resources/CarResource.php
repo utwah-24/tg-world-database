@@ -31,7 +31,9 @@ class CarResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['company', 'brand', 'vehicleModel']);
+        return parent::getEloquentQuery()
+            ->with(['company', 'brand', 'vehicleModel'])
+            ->orderBy('created_at', 'desc');
     }
 
     public static function form(Form $form): Form

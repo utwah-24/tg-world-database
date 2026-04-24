@@ -282,6 +282,95 @@ class SwaggerController extends Controller
                         ],
                     ],
                 ],
+                '/api/orders' => [
+                    'post' => [
+                        'tags' => ['Orders'],
+                        'summary' => 'Submit a new order from the website',
+                        'description' => 'Accepts multipart/form-data with the car details and optional PDF files. Automatically sends a WhatsApp notification on success.',
+                        'requestBody' => [
+                            'required' => true,
+                            'content' => [
+                                'multipart/form-data' => [
+                                    'schema' => [
+                                        '$ref' => '#/components/schemas/OrderRequest',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'responses' => [
+                            '201' => [
+                                'description' => 'Order submitted successfully',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'message' => ['type' => 'string', 'example' => 'Order submitted successfully.'],
+                                                'data' => ['$ref' => '#/components/schemas/Order'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '422' => [
+                                'description' => 'Validation error',
+                            ],
+                        ],
+                    ],
+                    'get' => [
+                        'tags' => ['Orders'],
+                        'summary' => 'List all orders',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Orders list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => ['$ref' => '#/components/schemas/Order'],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                '/api/orders/{id}' => [
+                    'get' => [
+                        'tags' => ['Orders'],
+                        'summary' => 'Get a single order by ID',
+                        'parameters' => [
+                            [
+                                'name' => 'id',
+                                'in' => 'path',
+                                'required' => true,
+                                'schema' => ['type' => 'integer'],
+                                'example' => 1,
+                            ],
+                        ],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Order found',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => ['$ref' => '#/components/schemas/Order'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '404' => ['description' => 'Order not found'],
+                        ],
+                    ],
+                ],
                 '/api/third-party' => [
                     'get' => [
                         'tags' => ['Third party'],
@@ -421,6 +510,29 @@ class SwaggerController extends Controller
                             'id' => ['type' => 'integer', 'example' => 1],
                             'name' => ['type' => 'string', 'example' => 'logo-dark'],
                             'path' => ['type' => 'string', 'example' => 'logo-dark.jpeg'],
+                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                        ],
+                    ],
+                    'OrderRequest' => [
+                        'type' => 'object',
+                        'required' => ['car_name'],
+                        'properties' => [
+                            'car_name' => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'year'     => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'invoice'  => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Invoice PDF file (max 20 MB)'],
+                            'receipt'  => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Receipt PDF file (max 20 MB)'],
+                        ],
+                    ],
+                    'Order' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id'         => ['type' => 'integer', 'example' => 1],
+                            'order_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-04-23'],
+                            'car_name'   => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'year'       => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'invoice'    => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the invoice PDF', 'example' => 'https://tgworld.e-saloon.online/storage/orders/invoices/invoice.pdf'],
+                            'receipt'    => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the receipt PDF', 'example' => 'https://tgworld.e-saloon.online/storage/orders/receipts/receipt.pdf'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],
