@@ -58,6 +58,7 @@ class EditCar extends EditRecord
             : null;
 
         $data['car_price'] = Car::carPriceDigitsForForm($data['car_price'] ?? null);
+        $data['mileage'] = Car::mileageForForm($data['mileage'] ?? null);
 
         // Convert string DB values back to booleans so the Toggle components render correctly
         $data['is_coming_soon'] = $data['is_coming_soon'] === 'set';
@@ -82,6 +83,7 @@ class EditCar extends EditRecord
         unset($data['car_pic_existing'], $data['car_pic_new']);
 
         $data['car_price'] = Car::carPriceFromFormInput($data['car_price'] ?? null);
+        $data['mileage'] = Car::mileageFromFormInput($data['mileage'] ?? null);
 
         // Resolve or create the company from the typed name
         $data['company_id'] = $this->resolveCompanyId(

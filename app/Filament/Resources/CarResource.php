@@ -66,11 +66,11 @@ class CarResource extends Resource
                 Forms\Components\TextInput::make('car_price')
                     ->label('Car price')
                     ->suffix('Million Tshs')
-                    ->placeholder('e.g. 295')
-                    ->maxLength(12)
-                    ->extraInputAttributes(['inputmode' => 'numeric', 'pattern' => '[0-9]*', 'autocomplete' => 'off'])
-                    ->rules(['nullable', 'regex:/^[0-9]*$/'])
-                    ->helperText('Type digits only (millions). “Million Tshs” is added when you save.'),
+                    ->placeholder('e.g. 295 or 28.5')
+                    ->maxLength(16)
+                    ->extraInputAttributes(['inputmode' => 'decimal', 'pattern' => '[0-9]*[.]?[0-9]*', 'autocomplete' => 'off'])
+                    ->rules(['nullable', 'regex:/^(\d+(\.\d+)?)?$/'])
+                    ->helperText('Millions of Tshs — whole number or decimal. “Million Tshs” is added when you save.'),
 
                 Forms\Components\TextInput::make('type')
                     ->label('Type')
@@ -108,8 +108,12 @@ class CarResource extends Resource
 
                 Forms\Components\TextInput::make('mileage')
                     ->label('Mileage')
-                    ->maxLength(255)
-                    ->placeholder('e.g. 85 000 km')
+                    ->suffix(' km')
+                    ->maxLength(12)
+                    ->placeholder('e.g. 85000')
+                    ->extraInputAttributes(['inputmode' => 'numeric', 'pattern' => '[0-9]*', 'autocomplete' => 'off'])
+                    ->rules(['nullable', 'regex:/^[0-9]*$/'])
+                    ->helperText('Digits only — “km” is added when you save.')
                     ->default(null),
 
                 Forms\Components\TextInput::make('company_name')

@@ -141,7 +141,7 @@ class Car extends Model
     }
 
     /**
-     * Leading digits from stored price text for the admin form (user enters numbers only).
+     * Numeric part (integer or decimal) from stored price text for the admin form.
      */
     public static function carPriceDigitsForForm(?string $stored): ?string
     {
@@ -149,7 +149,11 @@ class Car extends Model
             return null;
         }
 
-        if (preg_match('/^\s*(\d+)/', (string) $stored, $m)) {
+        if (preg_match('/^\s*([\d.]+)\s+Million\b/i', (string) $stored, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('/^\s*(\d+(?:\.\d+)?)/', (string) $stored, $m)) {
             return $m[1];
         }
 
@@ -157,9 +161,47 @@ class Car extends Model
     }
 
     /**
-     * Persist "{n} Million Tshs" from numeric-only form input.
+     * Persist "{n} Million Tshs" from form input (digits and optional one decimal point).
      */
     public static function carPriceFromFormInput(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $s = trim(str_replace(',', '.', (string) $value));
+        if ($s === '' || ! preg_match('/^\d+(\.\d+)?$/', $s)) {
+            return null;
+        }
+
+        [$int, $frac] = array_pad(explode('.', $s, 2), 2, null);
+        $int = ltrim((string) $int, '0');
+        if ($int === '') {
+            $int = '0';
+        }
+        $normalized = $frac !== null && $frac !== '' ? $int.'.'.$frac : $int;
+
+        return $normalized.' Million Tshs';
+    }
+
+    /**
+     * Digits-only mileage for the admin form; stored values may be "85 000 km", etc.
+     */
+    public static function mileageForForm(?string $stored): ?string
+    {
+        if ($stored === null || trim((string) $stored) === '') {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', (string) $stored);
+
+        return $digits === '' ? null : $digits;
+    }
+
+    /**
+     * Persist "{n} km" from numeric-only form input (suffix "km" is added automatically).
+     */
+    public static function mileageFromFormInput(mixed $value): ?string
     {
         if ($value === null || $value === '') {
             return null;
@@ -176,6 +218,6 @@ class Car extends Model
             $digits = '0';
         }
 
-        return $digits.' Million Tshs';
+        return $digits.' km';
     }
 }
