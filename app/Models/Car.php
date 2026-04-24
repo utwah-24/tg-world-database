@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Car extends Model
 {
+    use SyncsToRemote;
     protected $primaryKey = 'car_id';
 
     protected $fillable = [

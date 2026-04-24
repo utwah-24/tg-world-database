@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Brand extends Model
 {
+    use SyncsToRemote;
     protected $fillable = ['name'];
 
     protected static function booted(): void

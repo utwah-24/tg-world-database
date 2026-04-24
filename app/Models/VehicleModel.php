@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class VehicleModel extends Model
 {
+    use SyncsToRemote;
     protected $table = 'vehicle_models';
 
     protected $fillable = ['brand_id', 'name'];

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use App\Models\Car;
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
+    use SyncsToRemote;
+
     protected $fillable = ['name', 'logo'];
 
     /** Always include the resolved logo URL alongside the raw path. */

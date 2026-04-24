@@ -42,4 +42,20 @@ return [
         'whatsapp_to'    => env('TWILIO_WHATSAPP_TO'),
     ],
 
+    /*
+     * Live ↔ Local bidirectional sync settings.
+     *
+     * SYNC_SECRET  — shared secret validated by X-Sync-Secret header.
+     *               Must be identical on both instances.
+     * SYNC_PEER_URL — base URL of the OTHER instance that should receive
+     *               change events from this one.
+     *               e.g. on local:  SYNC_PEER_URL=https://tgworld.e-saloon.online
+     *                    on live:   SYNC_PEER_URL=https://<your-cloudflare-tunnel>.trycloudflare.com
+     */
+    'sync' => [
+        'live_url' => env('LIVE_APP_URL', 'https://tgworld.e-saloon.online'),
+        'secret'   => env('SYNC_SECRET'),
+        'peer_url' => env('SYNC_PEER_URL'),
+    ],
+
 ];

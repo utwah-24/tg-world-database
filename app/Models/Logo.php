@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 
 class Logo extends Model
 {
+    use SyncsToRemote;
     protected $fillable = [
         'name',
         'path',

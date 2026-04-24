@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Content extends Model
 {
+    use SyncsToRemote;
     protected $table = 'content';
 
     protected $primaryKey = 'contentID';
