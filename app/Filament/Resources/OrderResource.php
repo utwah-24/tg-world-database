@@ -49,13 +49,13 @@ class OrderResource extends Resource
                     ->columnSpanFull(),
 
                 Forms\Components\FileUpload::make('receipt')
-                    ->label('Receipt (PDF)')
+                    ->label('Receipt')
                     ->disk('public')
                     ->directory('orders/receipts')
-                    ->acceptedFileTypes(['application/pdf'])
+                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic'])
                     ->downloadable()
                     ->openable()
-                    ->helperText('Upload the receipt PDF for this order.')
+                    ->helperText('Upload the receipt — PDF or any image (JPG, PNG, WEBP, HEIC).')
                     ->columnSpanFull(),
             ]);
     }

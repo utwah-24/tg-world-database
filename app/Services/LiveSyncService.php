@@ -211,21 +211,27 @@ class LiveSyncService
     {
         $liveIds = collect($items)->pluck('id')->filter()->all();
 
+        $now = now()->toDateTimeString();
+
         foreach ($items as $item) {
-            Order::updateOrCreate(
-                ['id' => $item['id']],
+            DB::table('orders')->upsert(
                 [
-                    'car_name'   => $item['car_name']  ?? null,
-                    'year'       => $item['year']       ?? null,
-                    'order_date' => $item['order_date'] ?? null,
-                    'invoice'    => $item['invoice']    ?? null,
-                    'receipt'    => $item['receipt']    ?? null,
-                ]
+                    'id'         => $item['id'],
+                    'car_name'   => $item['car_name']   ?? null,
+                    'year'       => $item['year']        ?? null,
+                    'order_date' => $item['order_date']  ?? null,
+                    'invoice'    => $item['invoice']     ?? null,
+                    'receipt'    => $item['receipt']     ?? null,
+                    'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
+                    'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
+                ],
+                ['id'],
+                ['car_name', 'year', 'order_date', 'invoice', 'receipt', 'updated_at'],
             );
         }
 
         if (! empty($liveIds)) {
-            Order::whereNotIn('id', $liveIds)->delete();
+            DB::table('orders')->whereNotIn('id', $liveIds)->delete();
         }
     }
 
