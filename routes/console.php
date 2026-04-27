@@ -15,6 +15,9 @@ Artisan::command('inspire', function () {
 // Run daily at midnight to clear Coming Soon status from cars whose arrival date has passed
 Schedule::command('cars:clear-coming-soon')->dailyAt('00:00');
 
+// Pull new orders from the live site every minute so email notifications are near-instant
+Schedule::command('sync:pull')->everyMinute()->withoutOverlapping();
+
 Artisan::command('cars:sync-from-folders', function () {
     $basePath = public_path('TGworld');
 
