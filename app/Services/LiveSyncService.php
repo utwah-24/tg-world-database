@@ -222,11 +222,12 @@ class LiveSyncService
                     'order_date' => $item['order_date']  ?? null,
                     'invoice'    => $item['invoice']     ?? null,
                     'receipt'    => $item['receipt']     ?? null,
+                    'status'     => $item['status']      ?? false,
                     'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
                     'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_name', 'year', 'order_date', 'invoice', 'receipt', 'updated_at'],
+                ['car_name', 'year', 'order_date', 'invoice', 'receipt', 'status', 'updated_at'],
             );
         }
 

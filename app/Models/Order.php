@@ -14,9 +14,11 @@ class Order extends Model
         'year',
         'invoice',
         'receipt',
+        'status',
     ];
 
     protected $casts = [
         'order_date' => 'date',
+        'status'     => 'boolean',
     ];
 }

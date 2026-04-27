@@ -101,7 +101,7 @@ class CarResource extends Resource
                     ->default(null),
 
                 Forms\Components\TextInput::make('chassis')
-                    ->label('Chassis')
+                    ->label('Chasis')
                     ->maxLength(255)
                     ->placeholder('e.g. VIN / chassis number')
                     ->default(null),

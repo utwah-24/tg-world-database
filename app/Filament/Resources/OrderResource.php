@@ -9,7 +9,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Storage;
 
 class OrderResource extends Resource
 {
@@ -57,6 +56,11 @@ class OrderResource extends Resource
                     ->openable()
                     ->helperText('Upload the receipt — PDF or any image (JPG, PNG, WEBP, HEIC).')
                     ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('status')
+                    ->label('Status')
+                    ->helperText('Toggle on = Approved, off = Not Approved')
+                    ->default(false),
             ]);
     }
 
@@ -89,14 +93,25 @@ class OrderResource extends Resource
                     ->boolean()
                     ->trueIcon('heroicon-o-document-text')
                     ->falseIcon('heroicon-o-x-circle')
-                    ->getStateUsing(fn (Order $record): bool => filled($record->invoice)),
+                    ->getStateUsing(fn (Order $record): bool => filled($record->invoice))
+                    ->url(fn (Order $record): ?string => filled($record->invoice) ? self::fileUrl($record->invoice) : null)
+                    ->openUrlInNewTab(),
 
                 Tables\Columns\IconColumn::make('receipt')
                     ->label('Receipt')
                     ->boolean()
                     ->trueIcon('heroicon-o-document-text')
                     ->falseIcon('heroicon-o-x-circle')
-                    ->getStateUsing(fn (Order $record): bool => filled($record->receipt)),
+                    ->getStateUsing(fn (Order $record): bool => filled($record->receipt))
+                    ->url(fn (Order $record): ?string => filled($record->receipt) ? self::fileUrl($record->receipt) : null)
+                    ->openUrlInNewTab(),
+
+                Tables\Columns\ToggleColumn::make('status')
+                    ->label('Status')
+                    ->onIcon('heroicon-m-check')
+                    ->offIcon('heroicon-m-x-mark')
+                    ->onColor('success')
+                    ->offColor('danger'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -110,13 +125,24 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * Returns a viewable URL for a stored file path or a full URL from the live site.
+     */
+    private static function fileUrl(string $path): string
+    {
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
     }
 
     public static function getRelations(): array
@@ -128,7 +154,6 @@ class OrderResource extends Resource
     {
         return [
             'index' => Pages\ListOrders::route('/'),
-            'edit'  => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 }

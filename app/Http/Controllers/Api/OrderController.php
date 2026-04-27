@@ -75,6 +75,7 @@ class OrderController extends Controller
             'year'       => $order->year,
             'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
             'receipt'    => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,
+            'status'     => (bool) $order->status,
             'created_at' => $order->created_at,
             'updated_at' => $order->updated_at,
         ];
