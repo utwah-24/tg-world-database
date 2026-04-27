@@ -14,6 +14,7 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'car_name' => ['required', 'string', 'max:255'],
+            'email'    => ['nullable', 'email', 'max:255'],
             'year'     => ['nullable', 'string', 'max:4'],
             'invoice'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
             'receipt'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
@@ -32,6 +33,7 @@ class OrderController extends Controller
 
         $order = Order::create([
             'car_name'   => $validated['car_name'],
+            'email'      => $validated['email'] ?? null,
             'year'       => $validated['year'] ?? null,
             'order_date' => now()->toDateString(),
             'invoice'    => $invoicePath,
@@ -71,6 +73,7 @@ class OrderController extends Controller
         return [
             'id'         => $order->id,
             'order_date' => $order->order_date?->toDateString(),
+            'email'      => $order->email,
             'car_name'   => $order->car_name,
             'year'       => $order->year,
             'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,

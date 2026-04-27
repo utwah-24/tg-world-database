@@ -27,6 +27,11 @@ class OrderResource extends Resource
                     ->required()
                     ->native(false),
 
+                Forms\Components\TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->maxLength(255),
+
                 Forms\Components\TextInput::make('car_name')
                     ->label('Car Name')
                     ->required()
@@ -77,6 +82,11 @@ class OrderResource extends Resource
                     ->label('Order Date')
                     ->date('d M Y')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('car_name')
                     ->label('Car Name')
@@ -133,9 +143,6 @@ class OrderResource extends Resource
             ]);
     }
 
-    /**
-     * Returns a viewable URL for a stored file path or a full URL from the live site.
-     */
     private static function fileUrl(string $path): string
     {
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {

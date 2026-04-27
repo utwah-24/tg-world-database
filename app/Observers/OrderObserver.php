@@ -18,7 +18,7 @@ class OrderObserver
         }
 
         try {
-            Mail::to('mwingirautwah@gmail.com')->send(new NewOrderMail($order));
+            Mail::to('sharifissaceo@gmail.com')->send(new NewOrderMail($order));
         } catch (\Throwable $e) {
             Log::error('Failed to send new order email: '.$e->getMessage());
         }

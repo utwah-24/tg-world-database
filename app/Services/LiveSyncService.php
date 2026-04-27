@@ -211,15 +211,20 @@ class LiveSyncService
     {
         $liveIds = collect($items)->pluck('id')->filter()->all();
 
+        // Track which IDs are brand-new (not yet in local DB) so we can email them
+        $existingIds = DB::table('orders')->whereIn('id', $liveIds)->pluck('id')->all();
+        $newIds      = array_diff($liveIds, $existingIds);
+
         $now = now()->toDateTimeString();
 
         foreach ($items as $item) {
             DB::table('orders')->upsert(
                 [
                     'id'         => $item['id'],
+                    'order_date' => $item['order_date']  ?? null,
+                    'email'      => $item['email']       ?? null,
                     'car_name'   => $item['car_name']   ?? null,
                     'year'       => $item['year']        ?? null,
-                    'order_date' => $item['order_date']  ?? null,
                     'invoice'    => $item['invoice']     ?? null,
                     'receipt'    => $item['receipt']     ?? null,
                     'status'     => $item['status']      ?? false,
@@ -227,8 +232,20 @@ class LiveSyncService
                     'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_name', 'year', 'order_date', 'invoice', 'receipt', 'status', 'updated_at'],
+                ['car_name', 'email', 'year', 'order_date', 'invoice', 'receipt', 'status', 'updated_at'],
             );
+        }
+
+        // Send email notifications for newly synced orders
+        if (! empty($newIds)) {
+            \App\Models\Order::whereIn('id', $newIds)->each(function (\App\Models\Order $order) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to('sharifissaceo@gmail.com')
+                        ->send(new \App\Mail\NewOrderMail($order));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Failed to send synced order email: '.$e->getMessage());
+                }
+            });
         }
 
         if (! empty($liveIds)) {

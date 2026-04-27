@@ -10,6 +10,7 @@ class Order extends Model
     use SyncsToRemote;
     protected $fillable = [
         'order_date',
+        'email',
         'car_name',
         'year',
         'invoice',
