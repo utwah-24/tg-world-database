@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Content;
 use App\Models\Logo;
 use App\Models\Order;
+use App\Models\SoldCar;
 use App\Models\VehicleModel;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\Pool;
@@ -46,6 +47,7 @@ class LiveSyncService
                 $pool->as('content')->timeout(15)->get("{$this->base}/api/content"),
                 $pool->as('logos')->timeout(15)->get("{$this->base}/api/logos"),
                 $pool->as('orders')->timeout(15)->get("{$this->base}/api/orders"),
+                $pool->as('sold_cars')->timeout(15)->get("{$this->base}/api/sold-cars"),
             ]);
 
             $companies = $this->items($responses['companies']);
@@ -53,6 +55,7 @@ class LiveSyncService
             $content   = $this->items($responses['content']);
             $logos     = $this->items($responses['logos']);
             $orders    = $this->items($responses['orders']);
+            $soldCars  = $this->items($responses['sold_cars']);
 
             // ── Persist in FK-safe order ─────────────────────────────────────
             $this->saveCompanies($companies);
@@ -60,6 +63,7 @@ class LiveSyncService
             $this->saveContent($content);
             $this->saveLogos($logos);
             $this->saveOrders($orders);
+            $this->saveSoldCars($soldCars);
 
             return true;
         } catch (\Throwable $e) {
@@ -232,7 +236,8 @@ class LiveSyncService
                     'id'         => $item['id'],
                     'order_date' => $item['order_date']  ?? null,
                     'email'      => $item['email']       ?? null,
-                    'car_name'   => $item['car_name']   ?? null,
+                    'car_name'   => $item['car_name']    ?? null,
+                    'car_pics'   => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
                     'year'       => $item['year']        ?? null,
                     'invoice'      => $item['invoice']      ?? null,
                     'receipt'      => $item['receipt']      ?? null,
@@ -244,12 +249,45 @@ class LiveSyncService
                     'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_name', 'email', 'year', 'order_date', 'invoice', 'receipt', 'amount_paid', 'amount_due', 'total_amount', 'status', 'updated_at'],
+                ['car_name', 'car_pics', 'email', 'year', 'order_date', 'invoice', 'receipt', 'amount_paid', 'amount_due', 'total_amount', 'status', 'updated_at'],
             );
         }
 
         if (! empty($liveIds)) {
             DB::table('orders')->whereNotIn('id', $liveIds)->delete();
+        }
+    }
+
+    // ── Sold Cars ─────────────────────────────────────────────────────────────
+
+    private function saveSoldCars(array $items): void
+    {
+        if (empty($items)) {
+            return;
+        }
+
+        $liveIds = collect($items)->pluck('id')->filter()->all();
+        $now     = now()->toDateTimeString();
+
+        foreach ($items as $item) {
+            DB::table('sold_cars')->upsert(
+                [
+                    'id'         => $item['id'],
+                    'car_id'     => $item['car_id']     ?? null,
+                    'car_name'   => $item['car_name']   ?? '',
+                    'car_pics'   => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
+                    'sold_at'    => $item['sold_at']    ? Carbon::parse($item['sold_at'])->toDateTimeString() : null,
+                    'price_sold' => $item['price_sold'] ?? null,
+                    'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
+                    'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
+                ],
+                ['id'],
+                ['car_id', 'car_name', 'car_pics', 'sold_at', 'price_sold', 'updated_at'],
+            );
+        }
+
+        if (! empty($liveIds)) {
+            DB::table('sold_cars')->whereNotIn('id', $liveIds)->delete();
         }
     }
 

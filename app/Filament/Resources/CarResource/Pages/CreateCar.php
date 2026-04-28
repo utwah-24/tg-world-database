@@ -6,6 +6,7 @@ use App\Filament\Resources\CarResource;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\Company;
+use App\Models\SoldCar;
 use App\Models\VehicleModel;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -50,6 +51,21 @@ class CreateCar extends CreateRecord
         $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        $car = $this->record;
+
+        if ($car->is_sold === 'sold') {
+            SoldCar::create([
+                'car_id'     => $car->car_id,
+                'car_name'   => $car->car_name,
+                'car_pics'   => $car->car_pic ?? [],
+                'sold_at'    => $car->sold_at ?? now(),
+                'price_sold' => $car->car_price,
+            ]);
+        }
     }
 
     private function resolveCompanyId(?string $name, ?string $logo): ?int

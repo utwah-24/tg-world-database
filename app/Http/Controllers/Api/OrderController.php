@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Car;
 use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,8 +35,12 @@ class OrderController extends Controller
             $receiptPath = $request->file('receipt')->store('orders/receipts', 'public');
         }
 
+        $car = Car::where('car_name', $validated['car_name'])->first();
+        $carPics = $car?->car_pic ?? [];
+
         $order = Order::create([
             'car_name'     => $validated['car_name'],
+            'car_pics'     => $carPics,
             'email'        => $validated['email'] ?? null,
             'year'         => $validated['year'] ?? null,
             'order_date'   => now()->toDateString(),
@@ -81,6 +86,7 @@ class OrderController extends Controller
             'order_date' => $order->order_date?->toDateString(),
             'email'      => $order->email,
             'car_name'   => $order->car_name,
+            'car_pics'   => $order->car_pics ?? [],
             'year'       => $order->year,
             'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
             'receipt'    => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,

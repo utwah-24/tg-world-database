@@ -96,6 +96,13 @@ class OrderResource extends Resource
                     ->label('ID')
                     ->sortable(),
 
+                Tables\Columns\ImageColumn::make('car_pic_urls')
+                    ->label('Photos')
+                    ->stacked()
+                    ->limit(3)
+                    ->height(60)
+                    ->width(80),
+
                 Tables\Columns\TextColumn::make('order_date')
                     ->label('Order Date')
                     ->date('d M Y')

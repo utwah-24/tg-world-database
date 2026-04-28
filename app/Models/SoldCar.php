@@ -2,32 +2,27 @@
 
 namespace App\Models;
 
-use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 
-class Order extends Model
+class SoldCar extends Model
 {
-    use SyncsToRemote;
-
     protected $fillable = [
-        'order_date',
-        'email',
+        'car_id',
         'car_name',
         'car_pics',
-        'year',
-        'invoice',
-        'receipt',
-        'amount_paid',
-        'amount_due',
-        'total_amount',
-        'status',
+        'sold_at',
+        'price_sold',
     ];
 
     protected $casts = [
-        'order_date' => 'date',
-        'status'     => 'boolean',
-        'car_pics'   => 'array',
+        'sold_at'  => 'datetime',
+        'car_pics' => 'array',
     ];
+
+    public function car()
+    {
+        return $this->belongsTo(Car::class, 'car_id', 'car_id');
+    }
 
     public function getCarPicUrlsAttribute(): array
     {

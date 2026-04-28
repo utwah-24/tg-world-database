@@ -6,6 +6,7 @@ use App\Filament\Resources\CarResource;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\Company;
+use App\Models\SoldCar;
 use App\Models\VehicleModel;
 use Filament\Actions;
 use Filament\Actions\Action;
@@ -115,6 +116,14 @@ class EditCar extends EditRecord
 
         if ($willBeSold && ! $wasSold) {
             $data['sold_at'] = now();
+            // Record the sale in sold_cars table
+            SoldCar::create([
+                'car_id'     => $this->record->car_id,
+                'car_name'   => $this->record->car_name,
+                'car_pics'   => $this->record->car_pic ?? [],
+                'sold_at'    => now(),
+                'price_sold' => $this->record->car_price,
+            ]);
         } elseif (! $willBeSold) {
             $data['sold_at'] = null;
         }
