@@ -76,12 +76,19 @@ class CarResource extends Resource
                     ->label('Type')
                     ->placeholder('e.g. Truck, SUV, Crossover SUV…')
                     ->datalist([
-                        'truck' => 'Truck',
-                        'suv' => 'SUV',
-                        'sedan' => 'Sedan',
-                        'van' => 'Van',
-                        'pickup' => 'Pickup',
-                        'crossover suv' => 'Crossover SUV',
+                        'bus'             => 'Bus',
+                        'convertible'     => 'Convertible',
+                        'coupe'           => 'Coupe',
+                        'crossover suv'   => 'Crossover SUV',
+                        'hatchback'       => 'Hatchback',
+                        'heavy equipment' => 'Heavy Equipment',
+                        'minivan'         => 'Minivan',
+                        'pickup'          => 'Pickup',
+                        'sedan'           => 'Sedan',
+                        'station wagon'   => 'Station Wagon',
+                        'suv'             => 'SUV',
+                        'truck'           => 'Truck',
+                        'van'             => 'Van',
                     ])
                     ->helperText('Pick a suggestion or type any vehicle type. Stored as plain text (VARCHAR) — matches your database column.')
                     ->maxLength(255),

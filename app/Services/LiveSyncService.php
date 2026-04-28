@@ -94,21 +94,34 @@ class LiveSyncService
 
     private function saveCars(array $items): void
     {
-        // 1. Brands
+        // 1. Brands — use raw upsert so the live ID is always preserved
         $brands = collect($items)->whereNotNull('brand_id')->unique('brand_id');
         foreach ($brands as $item) {
-            Brand::updateOrCreate(
-                ['id' => $item['brand_id']],
-                ['name' => $item['brand'] ?? '']
+            DB::table('brands')->upsert(
+                ['id' => $item['brand_id'], 'name' => $item['brand'] ?? ''],
+                ['id'],
+                ['name'],
             );
         }
 
-        // 2. Vehicle models
+        // 2. Vehicle models — use raw upsert so the live ID is always preserved
         $models = collect($items)->whereNotNull('model_id')->unique('model_id');
         foreach ($models as $item) {
-            VehicleModel::updateOrCreate(
-                ['id' => $item['model_id']],
-                ['name' => $item['model'] ?? '', 'brand_id' => $item['brand_id'] ?? null]
+            // Remove any local record with the same (brand_id, name) but a different id
+            DB::table('vehicle_models')
+                ->where('brand_id', $item['brand_id'] ?? null)
+                ->where('name', $item['model'] ?? '')
+                ->where('id', '!=', $item['model_id'])
+                ->delete();
+
+            DB::table('vehicle_models')->upsert(
+                [
+                    'id'       => $item['model_id'],
+                    'name'     => $item['model']    ?? '',
+                    'brand_id' => $item['brand_id'] ?? null,
+                ],
+                ['id'],
+                ['name', 'brand_id'],
             );
         }
 
