@@ -211,10 +211,6 @@ class LiveSyncService
     {
         $liveIds = collect($items)->pluck('id')->filter()->all();
 
-        // Track which IDs are brand-new (not yet in local DB) so we can email them
-        $existingIds = DB::table('orders')->whereIn('id', $liveIds)->pluck('id')->all();
-        $newIds      = array_diff($liveIds, $existingIds);
-
         $now = now()->toDateTimeString();
 
         foreach ($items as $item) {
@@ -225,27 +221,18 @@ class LiveSyncService
                     'email'      => $item['email']       ?? null,
                     'car_name'   => $item['car_name']   ?? null,
                     'year'       => $item['year']        ?? null,
-                    'invoice'    => $item['invoice']     ?? null,
-                    'receipt'    => $item['receipt']     ?? null,
-                    'status'     => $item['status']      ?? false,
+                    'invoice'      => $item['invoice']      ?? null,
+                    'receipt'      => $item['receipt']      ?? null,
+                    'amount_paid'  => $item['amount_paid']  ?? null,
+                    'amount_due'   => $item['amount_due']   ?? null,
+                    'total_amount' => $item['total_amount'] ?? null,
+                    'status'       => $item['status']       ?? false,
                     'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
                     'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_name', 'email', 'year', 'order_date', 'invoice', 'receipt', 'status', 'updated_at'],
+                ['car_name', 'email', 'year', 'order_date', 'invoice', 'receipt', 'amount_paid', 'amount_due', 'total_amount', 'status', 'updated_at'],
             );
-        }
-
-        // Send email notifications for newly synced orders
-        if (! empty($newIds)) {
-            \App\Models\Order::whereIn('id', $newIds)->each(function (\App\Models\Order $order) {
-                try {
-                    \Illuminate\Support\Facades\Mail::to('sharifissaceo@gmail.com')
-                        ->send(new \App\Mail\NewOrderMail($order));
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error('Failed to send synced order email: '.$e->getMessage());
-                }
-            });
         }
 
         if (! empty($liveIds)) {

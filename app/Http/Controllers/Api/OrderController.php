@@ -13,11 +13,14 @@ class OrderController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'car_name' => ['required', 'string', 'max:255'],
-            'email'    => ['nullable', 'email', 'max:255'],
-            'year'     => ['nullable', 'string', 'max:4'],
-            'invoice'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
-            'receipt'  => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'car_name'     => ['required', 'string', 'max:255'],
+            'email'        => ['nullable', 'email', 'max:255'],
+            'year'         => ['nullable', 'string', 'max:4'],
+            'invoice'      => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'receipt'      => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'amount_paid'  => ['nullable', 'numeric', 'min:0'],
+            'amount_due'   => ['nullable', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $invoicePath = null;
@@ -32,12 +35,15 @@ class OrderController extends Controller
         }
 
         $order = Order::create([
-            'car_name'   => $validated['car_name'],
-            'email'      => $validated['email'] ?? null,
-            'year'       => $validated['year'] ?? null,
-            'order_date' => now()->toDateString(),
-            'invoice'    => $invoicePath,
-            'receipt'    => $receiptPath,
+            'car_name'     => $validated['car_name'],
+            'email'        => $validated['email'] ?? null,
+            'year'         => $validated['year'] ?? null,
+            'order_date'   => now()->toDateString(),
+            'invoice'      => $invoicePath,
+            'receipt'      => $receiptPath,
+            'amount_paid'  => $validated['amount_paid'] ?? null,
+            'amount_due'   => $validated['amount_due'] ?? null,
+            'total_amount' => $validated['total_amount'] ?? null,
         ]);
 
         return response()->json([
@@ -78,9 +84,12 @@ class OrderController extends Controller
             'year'       => $order->year,
             'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
             'receipt'    => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,
-            'status'     => (bool) $order->status,
-            'created_at' => $order->created_at,
-            'updated_at' => $order->updated_at,
+            'amount_paid'  => $order->amount_paid,
+            'amount_due'   => $order->amount_due,
+            'total_amount' => $order->total_amount,
+            'status'       => (bool) $order->status,
+            'created_at'   => $order->created_at,
+            'updated_at'   => $order->updated_at,
         ];
     }
 }

@@ -62,6 +62,24 @@ class OrderResource extends Resource
                     ->helperText('Upload the receipt — PDF or any image (JPG, PNG, WEBP, HEIC).')
                     ->columnSpanFull(),
 
+                Forms\Components\TextInput::make('amount_paid')
+                    ->label('Amount Paid')
+                    ->numeric()
+                    ->prefix('$')
+                    ->placeholder('0.00'),
+
+                Forms\Components\TextInput::make('amount_due')
+                    ->label('Amount Due')
+                    ->numeric()
+                    ->prefix('$')
+                    ->placeholder('0.00'),
+
+                Forms\Components\TextInput::make('total_amount')
+                    ->label('Total Amount')
+                    ->numeric()
+                    ->prefix('$')
+                    ->placeholder('0.00'),
+
                 Forms\Components\Toggle::make('status')
                     ->label('Status')
                     ->helperText('Toggle on = Approved, off = Not Approved')
@@ -115,6 +133,21 @@ class OrderResource extends Resource
                     ->getStateUsing(fn (Order $record): bool => filled($record->receipt))
                     ->url(fn (Order $record): ?string => filled($record->receipt) ? self::fileUrl($record->receipt) : null)
                     ->openUrlInNewTab(),
+
+                Tables\Columns\TextColumn::make('amount_paid')
+                    ->label('Amount Paid')
+                    ->money('USD')
+                    ->placeholder('—'),
+
+                Tables\Columns\TextColumn::make('amount_due')
+                    ->label('Amount Due')
+                    ->money('USD')
+                    ->placeholder('—'),
+
+                Tables\Columns\TextColumn::make('total_amount')
+                    ->label('Total Amount')
+                    ->money('USD')
+                    ->placeholder('—'),
 
                 Tables\Columns\ToggleColumn::make('status')
                     ->label('Status')

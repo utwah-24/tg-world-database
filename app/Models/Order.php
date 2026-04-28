@@ -15,6 +15,9 @@ class Order extends Model
         'year',
         'invoice',
         'receipt',
+        'amount_paid',
+        'amount_due',
+        'total_amount',
         'status',
     ];
 
