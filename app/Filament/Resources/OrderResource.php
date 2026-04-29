@@ -3,12 +3,15 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\OrderResource\Pages;
+use App\Models\Car;
 use App\Models\Order;
+use App\Models\SoldCar;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class OrderResource extends Resource
 {
@@ -22,68 +25,97 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\DatePicker::make('order_date')
-                    ->label('Order Date')
-                    ->required()
-                    ->native(false),
+                Forms\Components\Section::make('Order Info')
+                    ->description('Submitted by the customer — read only.')
+                    ->collapsible()
+                    ->schema([
+                        Forms\Components\TextInput::make('car_name')
+                            ->label('Car Name')
+                            ->disabled()
+                            ->columnSpanFull(),
 
-                Forms\Components\TextInput::make('email')
-                    ->label('Email')
-                    ->email()
-                    ->maxLength(255),
+                        Forms\Components\TextInput::make('year')
+                            ->label('Year')
+                            ->disabled(),
 
-                Forms\Components\TextInput::make('car_name')
-                    ->label('Car Name')
-                    ->required()
-                    ->maxLength(255),
+                        Forms\Components\TextInput::make('email')
+                            ->label('Customer Email')
+                            ->disabled(),
 
-                Forms\Components\TextInput::make('year')
-                    ->label('Year')
-                    ->maxLength(4)
-                    ->placeholder('e.g. 2024'),
-
-                Forms\Components\FileUpload::make('invoice')
-                    ->label('Invoice (PDF)')
-                    ->disk('public')
-                    ->directory('orders/invoices')
-                    ->acceptedFileTypes(['application/pdf'])
-                    ->downloadable()
-                    ->openable()
-                    ->helperText('Upload the invoice PDF for this order.')
+                        Forms\Components\DatePicker::make('order_date')
+                            ->label('Order Date')
+                            ->disabled()
+                            ->native(false),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
 
-                Forms\Components\FileUpload::make('receipt')
-                    ->label('Receipt')
-                    ->disk('public')
-                    ->directory('orders/receipts')
-                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic'])
-                    ->downloadable()
-                    ->openable()
-                    ->helperText('Upload the receipt — PDF or any image (JPG, PNG, WEBP, HEIC).')
+                Forms\Components\Section::make('Documents')
+                    ->schema([
+                        Forms\Components\Placeholder::make('invoice_link')
+                            ->label('Invoice')
+                            ->content(function ($record): HtmlString {
+                                if (! $record || ! filled($record->invoice)) {
+                                    return new HtmlString('<em style="color:#aaa;">No invoice uploaded.</em>');
+                                }
+
+                                return new HtmlString(
+                                    '<a href="'.e(self::fileUrl($record->invoice)).'" target="_blank" rel="noopener noreferrer"
+                                        style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+                                        Open Invoice
+                                    </a>'
+                                );
+                            }),
+
+                        Forms\Components\Placeholder::make('receipt_link')
+                            ->label('Receipt')
+                            ->content(function ($record): HtmlString {
+                                if (! $record || ! filled($record->receipt)) {
+                                    return new HtmlString('<em style="color:#aaa;">No receipt uploaded.</em>');
+                                }
+
+                                return new HtmlString(
+                                    '<a href="'.e(self::fileUrl($record->receipt)).'" target="_blank" rel="noopener noreferrer"
+                                        style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#16a34a;color:#fff;border-radius:6px;text-decoration:none;font-size:14px;font-weight:500;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+                                        Open Receipt
+                                    </a>'
+                                );
+                            }),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
 
-                Forms\Components\TextInput::make('amount_paid')
-                    ->label('Amount Paid')
-                    ->numeric()
-                    ->prefix('$')
-                    ->placeholder('0.00'),
+                Forms\Components\Section::make('Process Order')
+                    ->description('Update payment details and approve or reject this order.')
+                    ->schema([
+                        Forms\Components\TextInput::make('amount_paid')
+                            ->label('Amount Paid')
+                            ->numeric()
+                            ->prefix('Tshs')
+                            ->placeholder('0'),
 
-                Forms\Components\TextInput::make('amount_due')
-                    ->label('Amount Due')
-                    ->numeric()
-                    ->prefix('$')
-                    ->placeholder('0.00'),
+                        Forms\Components\TextInput::make('amount_due')
+                            ->label('Amount Due')
+                            ->numeric()
+                            ->prefix('Tshs')
+                            ->placeholder('0'),
 
-                Forms\Components\TextInput::make('total_amount')
-                    ->label('Total Amount')
-                    ->numeric()
-                    ->prefix('$')
-                    ->placeholder('0.00'),
+                        Forms\Components\TextInput::make('total_amount')
+                            ->label('Total Amount')
+                            ->numeric()
+                            ->prefix('Tshs')
+                            ->placeholder('0'),
 
-                Forms\Components\Toggle::make('status')
-                    ->label('Status')
-                    ->helperText('Toggle on = Approved, off = Not Approved')
-                    ->default(false),
+                        Forms\Components\Toggle::make('status')
+                            ->label('Approved')
+                            ->helperText('Toggle on = Approved, off = Not Approved')
+                            ->default(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -143,25 +175,49 @@ class OrderResource extends Resource
 
                 Tables\Columns\TextColumn::make('amount_paid')
                     ->label('Amount Paid')
-                    ->money('USD')
+                    ->formatStateUsing(fn ($state) => $state !== null ? 'Tshs '.number_format((float) $state, 0, '.', ',') : null)
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('amount_due')
                     ->label('Amount Due')
-                    ->money('USD')
+                    ->formatStateUsing(fn ($state) => $state !== null ? 'Tshs '.number_format((float) $state, 0, '.', ',') : null)
                     ->placeholder('—'),
 
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total Amount')
-                    ->money('USD')
+                    ->formatStateUsing(fn ($state) => $state !== null ? 'Tshs '.number_format((float) $state, 0, '.', ',') : null)
                     ->placeholder('—'),
 
                 Tables\Columns\ToggleColumn::make('status')
-                    ->label('Status')
+                    ->label('Approved')
                     ->onIcon('heroicon-m-check')
                     ->offIcon('heroicon-m-x-mark')
                     ->onColor('success')
-                    ->offColor('danger'),
+                    ->offColor('danger')
+                    ->afterStateUpdated(function (Order $record, bool $state): void {
+                        if ($state) {
+                            // Approved → add to sold cars (skip if already exists for this order)
+                            if (SoldCar::where('order_id', $record->id)->exists()) {
+                                return;
+                            }
+
+                            $car = Car::where('car_name', $record->car_name)->first();
+
+                            SoldCar::create([
+                                'order_id'   => $record->id,
+                                'car_id'     => $car?->car_id,
+                                'car_name'   => $record->car_name,
+                                'car_pics'   => $record->car_pics ?? [],
+                                'sold_at'    => now(),
+                                'price_sold' => $record->total_amount
+                                    ? number_format((float) $record->total_amount, 0, '.', ' ').' Tshs'
+                                    : null,
+                            ]);
+                        } else {
+                            // Unapproved → remove the linked sold car entry
+                            SoldCar::where('order_id', $record->id)->delete();
+                        }
+                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -174,7 +230,9 @@ class OrderResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->modalHeading('Order Details')
+                    ->modalWidth('4xl'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -189,7 +247,11 @@ class OrderResource extends Resource
             return $path;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        // Files are stored on the live server under /public/storage/.
+        // Using sync.live_url ensures this works in both local dev and production.
+        $base = rtrim(config('services.sync.live_url', config('app.url')), '/');
+
+        return $base . '/public/storage/' . ltrim($path, '/');
     }
 
     public static function getRelations(): array

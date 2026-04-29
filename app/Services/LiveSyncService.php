@@ -239,8 +239,8 @@ class LiveSyncService
                     'car_name'   => $item['car_name']    ?? null,
                     'car_pics'   => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
                     'year'       => $item['year']        ?? null,
-                    'invoice'      => $item['invoice']      ?? null,
-                    'receipt'      => $item['receipt']      ?? null,
+                    'invoice'      => $this->relativeStoragePath($item['invoice'] ?? null),
+                    'receipt'      => $this->relativeStoragePath($item['receipt'] ?? null),
                     'amount_paid'  => $item['amount_paid']  ?? null,
                     'amount_due'   => $item['amount_due']   ?? null,
                     'total_amount' => $item['total_amount'] ?? null,
@@ -256,6 +256,22 @@ class LiveSyncService
         if (! empty($liveIds)) {
             DB::table('orders')->whereNotIn('id', $liveIds)->delete();
         }
+    }
+
+    /**
+     * Strip all repeated storage URL prefixes from a path returned by the API,
+     * leaving only the clean relative path (e.g. "orders/invoices/file.pdf").
+     */
+    private function relativeStoragePath(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        // Repeatedly strip leading "https?://host/.../storage/" segments until gone
+        $clean = preg_replace('#^(https?://[^/]+(?:/[^/]+)*/storage/)+#', '', $value);
+
+        return $clean ?: null;
     }
 
     // ── Sold Cars ─────────────────────────────────────────────────────────────
