@@ -34,11 +34,14 @@ class Car extends Model
         'arrival_date',
         'is_sold',
         'registration',
+        'registration_number',
+        'total_available',
     ];
 
     protected $casts = [
         'car_pic' => 'array',
         'arrival_date' => 'date',
+        'total_available' => 'integer',
     ];
 
     public function content(): HasOne

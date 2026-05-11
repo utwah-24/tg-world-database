@@ -13,21 +13,38 @@ class CarStatsWidget extends Widget
 
     protected int | string | array $columnSpan = 'full';
 
+    protected static ?string $pollingInterval = '30s';
+
     public function getTypeStats(): array
     {
-        $types = ['suv', 'truck', 'sedan', 'van', 'pickup'];
-
-        $counts = collect($types)->mapWithKeys(
-            fn ($t) => [$t => Car::where('type', $t)->count()]
-        );
-
-        return [
-            ['label' => 'SUV',    'key' => 'suv',    'count' => $counts['suv'],    'color' => '#22c55e'],
-            ['label' => 'Truck',  'key' => 'truck',  'count' => $counts['truck'],  'color' => '#f59e0b'],
-            ['label' => 'Sedan',  'key' => 'sedan',  'count' => $counts['sedan'],  'color' => '#3b82f6'],
-            ['label' => 'Van',    'key' => 'van',    'count' => $counts['van'],    'color' => '#ef4444'],
-            ['label' => 'Pickup', 'key' => 'pickup', 'count' => $counts['pickup'], 'color' => '#6b7280'],
+        $colorMap = [
+            'suv'           => '#22c55e',
+            'truck'         => '#f59e0b',
+            'sedan'         => '#3b82f6',
+            'van'           => '#ef4444',
+            'pickup'        => '#6b7280',
+            'bus'           => '#8b5cf6',
+            'convertible'   => '#ec4899',
+            'coupe'         => '#06b6d4',
+            'crossover suv' => '#14b8a6',
+            'hatchback'     => '#f97316',
+            'minivan'       => '#a855f7',
+            'station wagon' => '#0ea5e9',
         ];
+
+        return Car::selectRaw('LOWER(type) as type_key, COUNT(*) as total')
+            ->whereNotNull('type')
+            ->where('type', '!=', '')
+            ->groupBy('type_key')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'label' => ucwords($row->type_key === 'suv' ? 'SUV' : $row->type_key),
+                'key'   => $row->type_key,
+                'count' => $row->total,
+                'color' => $colorMap[$row->type_key] ?? '#94a3b8',
+            ])
+            ->toArray();
     }
 
     public function getConditionStats(): array

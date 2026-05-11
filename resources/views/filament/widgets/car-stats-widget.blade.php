@@ -48,7 +48,7 @@
 
                 {{-- By Type --}}
                 <div x-show="tab === 'type'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                         @foreach($this->getTypeStats() as $stat)
                             <div class="flex flex-col items-center justify-center gap-2 rounded-xl p-5 ring-1 ring-black/5 dark:ring-white/10 bg-gray-50 dark:bg-gray-800">
                                 <div class="h-2.5 w-10 rounded-full" style="background-color: {{ $stat['color'] }}"></div>

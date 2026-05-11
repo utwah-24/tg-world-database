@@ -106,6 +106,8 @@ class CarController extends Controller
             'arrival_date' => $car->arrival_date?->toDateString(),
             'is_sold' => $car->is_sold,
             'registration' => $car->registration,
+            'registration_number' => $car->registration_number,
+            'total_available' => $car->total_available,
             'category' => $this->categoryNameFromKey($categoryKey),
             'created_at' => $car->created_at,
             'updated_at' => $car->updated_at,

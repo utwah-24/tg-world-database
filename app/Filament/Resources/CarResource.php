@@ -222,7 +222,23 @@ class CarResource extends Resource
                 Forms\Components\Toggle::make('registration')
                     ->label('Registered')
                     ->helperText('Toggle on if this car is registered, off if unregistered.')
+                    ->live()
                     ->columnSpanFull(),
+
+                Forms\Components\TextInput::make('registration_number')
+                    ->label('Registration Number')
+                    ->placeholder('e.g. T 123 ABC')
+                    ->maxLength(50)
+                    ->visible(fn (Get $get): bool => (bool) $get('registration'))
+                    ->columnSpanFull(),
+
+                Forms\Components\TextInput::make('total_available')
+                    ->label('Total Available')
+                    ->numeric()
+                    ->minValue(0)
+                    ->placeholder('e.g. 5')
+                    ->helperText('Total number of units available for this car.')
+                    ->default(null),
 
                 Forms\Components\Toggle::make('is_sold')
                     ->label('Sold for Now')
@@ -374,6 +390,18 @@ class CarResource extends Resource
                     ->badge()
                     ->state(fn (Car $record): string => $record->registration === 'registered' ? 'Registered' : 'Unregistered')
                     ->color(fn (Car $record): string => $record->registration === 'registered' ? 'success' : 'gray')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('registration_number')
+                    ->label('Reg. Number')
+                    ->placeholder('—')
+                    ->searchable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('total_available')
+                    ->label('Total Available')
+                    ->placeholder('—')
+                    ->sortable()
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('is_sold')
