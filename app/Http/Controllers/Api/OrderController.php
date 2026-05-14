@@ -40,6 +40,7 @@ class OrderController extends Controller
 
         $order = Order::create([
             'car_name'     => $validated['car_name'],
+            'car_id'       => $car?->car_id,
             'car_pics'     => $carPics,
             'email'        => $validated['email'] ?? null,
             'year'         => $validated['year'] ?? null,
@@ -82,20 +83,23 @@ class OrderController extends Controller
     private function formatOrder(Order $order): array
     {
         return [
-            'id'         => $order->id,
-            'order_date' => $order->order_date?->toDateString(),
-            'email'      => $order->email,
-            'car_name'   => $order->car_name,
-            'car_pics'   => $order->car_pics ?? [],
-            'year'       => $order->year,
-            'invoice'    => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
-            'receipt'    => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,
-            'amount_paid'  => $order->amount_paid,
-            'amount_due'   => $order->amount_due,
-            'total_amount' => $order->total_amount,
-            'status'       => (bool) $order->status,
-            'created_at'   => $order->created_at,
-            'updated_at'   => $order->updated_at,
+            'id'              => $order->id,
+            'order_date'      => $order->order_date?->toDateString(),
+            'email'           => $order->email,
+            'car_name'        => $order->car_name,
+            'car_id'          => $order->car_id,
+            'total_available' => $order->total_available,
+            'qty'             => $order->qty ?? 1,
+            'car_pics'        => $order->car_pics ?? [],
+            'year'            => $order->year,
+            'invoice'         => $order->invoice ? Storage::disk('public')->url($order->invoice) : null,
+            'receipt'         => $order->receipt ? Storage::disk('public')->url($order->receipt) : null,
+            'amount_paid'     => $order->amount_paid,
+            'amount_due'      => $order->amount_due,
+            'total_amount'    => $order->total_amount,
+            'status'          => (bool) $order->status,
+            'created_at'      => $order->created_at,
+            'updated_at'      => $order->updated_at,
         ];
     }
 }

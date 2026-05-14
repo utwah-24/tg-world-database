@@ -36,12 +36,15 @@ class Car extends Model
         'registration',
         'registration_number',
         'total_available',
+        'in_dar',
+        'location',
     ];
 
     protected $casts = [
         'car_pic' => 'array',
         'arrival_date' => 'date',
         'total_available' => 'integer',
+        'in_dar'          => 'boolean',
     ];
 
     public function content(): HasOne

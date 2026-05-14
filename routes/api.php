@@ -23,3 +23,4 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders', [OrderController::class, 'index']);
 Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
 Route::get('/sold-cars', [SoldCarController::class, 'index']);
+Route::get('/sold-cars/{id}', [SoldCarController::class, 'show'])->whereNumber('id');

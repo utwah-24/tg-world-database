@@ -84,7 +84,10 @@ class LiveSyncService
         foreach ($items as $item) {
             Company::updateOrCreate(
                 ['id' => $item['company_id']],
-                ['name' => $item['company_label']]
+                [
+                    'name' => $item['company_label'],
+                    'logo' => $item['logo'] ?? null,
+                ]
             );
         }
 
@@ -139,27 +142,31 @@ class LiveSyncService
         //    so we set it directly on the model instance to preserve the live ID.
         foreach ($items as $item) {
             $data = [
-                'car_name'          => $item['car_name']          ?? null,
-                'year'              => $item['year']              ?? null,
-                'car_pic'           => $item['car_pic']           ?? null,
-                'car_price'         => $item['car_price']         ?? null,
-                'car_description'   => $item['car_description']   ?? null,
-                'type'              => $item['type']              ?? null,
-                'condition'         => $item['condition']         ?? null,
-                'color'             => $item['color']             ?? null,
-                'chassis'           => $item['chassis']           ?? null,
-                'mileage'           => $item['mileage']           ?? null,
-                'company_id'        => $item['company_id']        ?? null,
-                'company_label'     => $item['company']           ?? null,
-                'company_logo_path' => $item['company_logo_path'] ?? null,
-                'brand_id'          => $item['brand_id']          ?? null,
-                'brand_label'       => $item['brand']             ?? null,
-                'vehicle_model_id'  => $item['model_id']          ?? null,
-                'model_label'       => $item['model']             ?? null,
-                'is_coming_soon'    => $item['is_coming_soon']    ?? false,
-                'arrival_date'      => $item['arrival_date']      ?? null,
-                'is_sold'           => $item['is_sold']           ?? false,
-                'registration'      => $item['registration']      ?? null,
+                'car_name'            => $item['car_name']            ?? null,
+                'year'                => $item['year']                ?? null,
+                'car_pic'             => $item['car_pic']             ?? null,
+                'car_price'           => $item['car_price']           ?? null,
+                'car_description'     => $item['car_description']     ?? null,
+                'type'                => $item['type']                ?? null,
+                'condition'           => $item['condition']           ?? null,
+                'color'               => $item['color']               ?? null,
+                'chassis'             => $item['chassis']             ?? null,
+                'mileage'             => $item['mileage']             ?? null,
+                'company_id'          => $item['company_id']          ?? null,
+                'company_label'       => $item['company']             ?? null,
+                'company_logo_path'   => $item['company_logo_path']   ?? null,
+                'brand_id'            => $item['brand_id']            ?? null,
+                'brand_label'         => $item['brand']               ?? null,
+                'vehicle_model_id'    => $item['model_id']            ?? null,
+                'model_label'         => $item['model']               ?? null,
+                'is_coming_soon'      => $item['is_coming_soon']      ?? false,
+                'arrival_date'        => $item['arrival_date']        ?? null,
+                'is_sold'             => $item['is_sold']             ?? false,
+                'registration'        => $item['registration']        ?? null,
+                'registration_number' => $item['registration_number'] ?? null,
+                'in_dar'              => $item['in_dar']              ?? true,
+                'location'            => $item['location']            ?? null,
+                'total_available'     => $item['total_available']     ?? null,
             ];
 
             $car = Car::find($item['car_id']) ?? new Car();
@@ -233,23 +240,26 @@ class LiveSyncService
         foreach ($items as $item) {
             DB::table('orders')->upsert(
                 [
-                    'id'         => $item['id'],
-                    'order_date' => $item['order_date']  ?? null,
-                    'email'      => $item['email']       ?? null,
-                    'car_name'   => $item['car_name']    ?? null,
-                    'car_pics'   => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
-                    'year'       => $item['year']        ?? null,
-                    'invoice'      => $this->relativeStoragePath($item['invoice'] ?? null),
-                    'receipt'      => $this->relativeStoragePath($item['receipt'] ?? null),
-                    'amount_paid'  => $item['amount_paid']  ?? null,
-                    'amount_due'   => $item['amount_due']   ?? null,
-                    'total_amount' => $item['total_amount'] ?? null,
-                    'status'       => $item['status']       ?? false,
-                    'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
-                    'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
+                    'id'              => $item['id'],
+                    'order_date'      => $item['order_date']  ?? null,
+                    'email'           => $item['email']       ?? null,
+                    'car_name'        => $item['car_name']    ?? null,
+                    'car_id'          => $item['car_id']          ?? null,
+                    'total_available' => $item['total_available'] ?? null,
+                    'qty'             => $item['qty']             ?? 1,
+                    'car_pics'        => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
+                    'year'            => $item['year']        ?? null,
+                    'invoice'         => $this->relativeStoragePath($item['invoice'] ?? null),
+                    'receipt'         => $this->relativeStoragePath($item['receipt'] ?? null),
+                    'amount_paid'     => $item['amount_paid']  ?? null,
+                    'amount_due'      => $item['amount_due']   ?? null,
+                    'total_amount'    => $item['total_amount'] ?? null,
+                    'status'          => $item['status']       ?? false,
+                    'created_at'      => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
+                    'updated_at'      => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_name', 'car_pics', 'email', 'year', 'order_date', 'invoice', 'receipt', 'amount_paid', 'amount_due', 'total_amount', 'status', 'updated_at'],
+                ['car_name', 'car_id', 'total_available', 'qty', 'car_pics', 'email', 'year', 'order_date', 'invoice', 'receipt', 'amount_paid', 'amount_due', 'total_amount', 'status', 'updated_at'],
             );
         }
 
@@ -288,17 +298,19 @@ class LiveSyncService
         foreach ($items as $item) {
             DB::table('sold_cars')->upsert(
                 [
-                    'id'         => $item['id'],
-                    'car_id'     => $item['car_id']     ?? null,
-                    'car_name'   => $item['car_name']   ?? '',
-                    'car_pics'   => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
-                    'sold_at'    => $item['sold_at']    ? Carbon::parse($item['sold_at'])->toDateTimeString() : null,
-                    'price_sold' => $item['price_sold'] ?? null,
-                    'created_at' => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
-                    'updated_at' => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
+                    'id'              => $item['id'],
+                    'car_id'          => $item['car_id']          ?? null,
+                    'car_name'        => $item['car_name']        ?? '',
+                    'car_pics'        => isset($item['car_pics']) ? json_encode($item['car_pics']) : null,
+                    'sold_at'         => $item['sold_at']         ? Carbon::parse($item['sold_at'])->toDateTimeString() : null,
+                    'price_sold'      => $item['price_sold']      ?? null,
+                    'total_available' => $item['total_available'] ?? null,
+                    'qty'             => $item['qty']             ?? 1,
+                    'created_at'      => Carbon::parse($item['created_at'] ?? $now)->toDateTimeString(),
+                    'updated_at'      => Carbon::parse($item['updated_at'] ?? $now)->toDateTimeString(),
                 ],
                 ['id'],
-                ['car_id', 'car_name', 'car_pics', 'sold_at', 'price_sold', 'updated_at'],
+                ['car_id', 'car_name', 'car_pics', 'sold_at', 'price_sold', 'total_available', 'qty', 'updated_at'],
             );
         }
 

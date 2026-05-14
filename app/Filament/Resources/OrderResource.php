@@ -188,30 +188,53 @@ class OrderResource extends Resource
                     ->formatStateUsing(fn ($state) => $state !== null ? 'Tshs '.number_format((float) $state, 0, '.', ',') : null)
                     ->placeholder('—'),
 
+                Tables\Columns\TextColumn::make('total_available')
+                    ->label('Qty Left')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state) => match (true) {
+                        $state === null   => 'gray',
+                        $state === 0      => 'danger',
+                        $state <= 2       => 'warning',
+                        default           => 'success',
+                    }),
+
+                Tables\Columns\TextColumn::make('qty')
+                    ->label('Qty')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('primary'),
+
                 Tables\Columns\ToggleColumn::make('status')
                     ->label('Approved')
                     ->onIcon('heroicon-m-check')
                     ->offIcon('heroicon-m-x-mark')
                     ->onColor('success')
                     ->offColor('danger')
-                    ->afterStateUpdated(function (Order $record, bool $state): void {
+                        ->afterStateUpdated(function (Order $record, bool $state): void {
                         if ($state) {
                             // Approved → add to sold cars (skip if already exists for this order)
                             if (SoldCar::where('order_id', $record->id)->exists()) {
                                 return;
                             }
 
-                            $car = Car::where('car_name', $record->car_name)->first();
+                            $car = $record->car_id
+                                ? Car::find($record->car_id)
+                                : Car::where('car_name', $record->car_name)->first();
 
                             SoldCar::create([
-                                'order_id'   => $record->id,
-                                'car_id'     => $car?->car_id,
-                                'car_name'   => $record->car_name,
-                                'car_pics'   => $record->car_pics ?? [],
-                                'sold_at'    => now(),
-                                'price_sold' => $record->total_amount
+                                'order_id'        => $record->id,
+                                'car_id'          => $car?->car_id,
+                                'car_name'        => $record->car_name,
+                                'car_pics'        => $record->car_pics ?? [],
+                                'sold_at'         => now(),
+                                'price_sold'      => $record->total_amount
                                     ? number_format((float) $record->total_amount, 0, '.', ' ').' Tshs'
                                     : null,
+                                'total_available' => $car?->total_available,
+                                'qty'             => $record->qty ?? 1,
                             ]);
                         } else {
                             // Unapproved → remove the linked sold car entry

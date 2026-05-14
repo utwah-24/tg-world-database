@@ -232,6 +232,21 @@ class CarResource extends Resource
                     ->visible(fn (Get $get): bool => (bool) $get('registration'))
                     ->columnSpanFull(),
 
+                Forms\Components\Toggle::make('in_dar')
+                    ->label('In Dar')
+                    ->helperText('Toggle on if this car is in Dar es Salaam. Toggle off to enter a custom location.')
+                    ->default(true)
+                    ->live()
+                    ->columnSpanFull(),
+
+                Forms\Components\TextInput::make('location')
+                    ->label('Location')
+                    ->placeholder('e.g. Arusha, Mwanza, Dodoma…')
+                    ->maxLength(255)
+                    ->visible(fn (Get $get): bool => ! (bool) $get('in_dar'))
+                    ->required(fn (Get $get): bool => ! (bool) $get('in_dar'))
+                    ->columnSpanFull(),
+
                 Forms\Components\TextInput::make('total_available')
                     ->label('Total Available')
                     ->numeric()
@@ -402,6 +417,21 @@ class CarResource extends Resource
                     ->label('Total Available')
                     ->placeholder('—')
                     ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\IconColumn::make('in_dar')
+                    ->label('In Dar')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-map-pin')
+                    ->trueColor('success')
+                    ->falseColor('warning')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('location')
+                    ->label('Location')
+                    ->placeholder('Dar es Salaam')
+                    ->searchable()
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('is_sold')

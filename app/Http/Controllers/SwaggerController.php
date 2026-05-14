@@ -17,8 +17,8 @@ class SwaggerController extends Controller
             'openapi' => '3.0.3',
             'info' => [
                 'title' => 'TG World Cars API',
-                'version' => '1.0.0',
-                'description' => 'API documentation for cars, logos, category filtering, and user authentication.',
+                'version' => '1.1.0',
+                'description' => 'API documentation for cars, orders, sold cars, logos, categories, and authentication.',
             ],
             'servers' => [
                 [
@@ -385,15 +385,69 @@ class SwaggerController extends Controller
                                             'properties' => [
                                                 'data' => [
                                                     'type' => 'array',
-                                                    'items' => [
-                                                        '$ref' => '#/components/schemas/Car',
-                                                    ],
+                                                    'items' => ['$ref' => '#/components/schemas/Car'],
                                                 ],
                                             ],
                                         ],
                                     ],
                                 ],
                             ],
+                        ],
+                    ],
+                ],
+                '/api/sold-cars' => [
+                    'get' => [
+                        'tags' => ['Sold Cars'],
+                        'summary' => 'List all sold cars',
+                        'description' => 'Returns every sale record ordered by sold_at descending. Each record includes a stock snapshot (total_available) and quantity (qty) at the time of the sale.',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Sold cars list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => ['$ref' => '#/components/schemas/SoldCar'],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                '/api/sold-cars/{id}' => [
+                    'get' => [
+                        'tags' => ['Sold Cars'],
+                        'summary' => 'Get a single sold car record by ID',
+                        'parameters' => [
+                            [
+                                'name' => 'id',
+                                'in' => 'path',
+                                'required' => true,
+                                'schema' => ['type' => 'integer'],
+                                'example' => 1,
+                            ],
+                        ],
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Sold car found',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => ['$ref' => '#/components/schemas/SoldCar'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '404' => ['description' => 'Sold car not found'],
                         ],
                     ],
                 ],
@@ -484,6 +538,10 @@ class SwaggerController extends Controller
                             'arrival_date' => ['type' => 'string', 'format' => 'date', 'nullable' => true, 'example' => '2026-04-15'],
                             'is_sold' => ['type' => 'string', 'enum' => ['available', 'sold'], 'example' => 'available'],
                             'registration' => ['type' => 'string', 'enum' => ['registered', 'unregistered'], 'example' => 'unregistered'],
+                            'registration_number' => ['type' => 'string', 'nullable' => true, 'example' => 'T 123 ABC'],
+                            'in_dar' => ['type' => 'boolean', 'description' => 'True = car is in Dar es Salaam. False = see location field.', 'example' => true],
+                            'location' => ['type' => 'string', 'nullable' => true, 'description' => 'Custom location when in_dar is false', 'example' => 'Arusha'],
+                            'total_available' => ['type' => 'integer', 'description' => 'Number of units currently available for this car', 'example' => 3],
                             'category' => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
@@ -499,8 +557,9 @@ class SwaggerController extends Controller
                     'CarCompany' => [
                         'type' => 'object',
                         'properties' => [
-                            'company_id' => ['type' => 'integer', 'example' => 1],
-                            'company_label' => ['type' => 'string', 'example' => 'Toyota'],
+                            'company_id'        => ['type' => 'integer', 'example' => 1],
+                            'company_label'     => ['type' => 'string', 'example' => 'Toyota'],
+                            'logo'              => ['type' => 'string', 'nullable' => true, 'description' => 'Relative storage path of the logo (e.g. TGworld/logos/toyota.svg)', 'example' => 'TGworld/logos/toyota.svg'],
                             'company_logo_path' => ['type' => 'string', 'nullable' => true, 'description' => 'Fully-resolved absolute URL of the company logo', 'example' => 'https://tgworld.e-saloon.online/public/TGworld/logos/toyota.svg'],
                         ],
                     ],
@@ -518,23 +577,52 @@ class SwaggerController extends Controller
                         'type' => 'object',
                         'required' => ['car_name'],
                         'properties' => [
-                            'car_name' => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
-                            'year'     => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
-                            'invoice'  => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Invoice PDF file (max 20 MB)'],
-                            'receipt'  => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Receipt PDF file (max 20 MB)'],
+                            'car_name'     => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'email'        => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'customer@example.com'],
+                            'year'         => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'amount_paid'  => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 5000000],
+                            'amount_due'   => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 150000000],
+                            'total_amount' => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 155000000],
+                            'invoice'      => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Invoice PDF file (max 20 MB)'],
+                            'receipt'      => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Receipt PDF file (max 20 MB)'],
                         ],
                     ],
                     'Order' => [
                         'type' => 'object',
                         'properties' => [
-                            'id'         => ['type' => 'integer', 'example' => 1],
-                            'order_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-04-23'],
-                            'car_name'   => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
-                            'year'       => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
-                            'invoice'    => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the invoice PDF', 'example' => 'https://tgworld.e-saloon.online/storage/orders/invoices/invoice.pdf'],
-                            'receipt'    => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the receipt PDF', 'example' => 'https://tgworld.e-saloon.online/storage/orders/receipts/receipt.pdf'],
-                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
-                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'id'              => ['type' => 'integer', 'example' => 1],
+                            'order_date'      => ['type' => 'string', 'format' => 'date', 'example' => '2026-04-23'],
+                            'email'           => ['type' => 'string', 'format' => 'email', 'nullable' => true, 'example' => 'customer@example.com'],
+                            'car_name'        => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'car_id'          => ['type' => 'integer', 'nullable' => true, 'description' => 'References cars.car_id', 'example' => 12],
+                            'car_pics'        => ['type' => 'array', 'nullable' => true, 'items' => ['type' => 'string'], 'example' => ['TGworld/SUV/LANDCRUISER ZX/Front.jpeg']],
+                            'year'            => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'invoice'         => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the invoice PDF'],
+                            'receipt'         => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the receipt PDF'],
+                            'amount_paid'     => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 5000000],
+                            'amount_due'      => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 150000000],
+                            'total_amount'    => ['type' => 'number', 'format' => 'float', 'nullable' => true, 'example' => 155000000],
+                            'total_available' => ['type' => 'integer', 'nullable' => true, 'description' => 'Remaining stock after this order was placed', 'example' => 2],
+                            'qty'             => ['type' => 'integer', 'description' => 'Number of units bought in this order', 'example' => 1],
+                            'status'          => ['type' => 'boolean', 'description' => 'True = approved, false = pending', 'example' => false],
+                            'created_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                        ],
+                    ],
+                    'SoldCar' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id'              => ['type' => 'integer', 'example' => 1],
+                            'order_id'        => ['type' => 'integer', 'nullable' => true, 'description' => 'The order that triggered this sale', 'example' => 5],
+                            'car_id'          => ['type' => 'integer', 'nullable' => true, 'description' => 'References cars.car_id', 'example' => 12],
+                            'car_name'        => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'car_pics'        => ['type' => 'array', 'nullable' => true, 'items' => ['type' => 'string'], 'example' => ['TGworld/SUV/LANDCRUISER ZX/Front.jpeg']],
+                            'sold_at'         => ['type' => 'string', 'format' => 'date-time', 'nullable' => true, 'example' => '2026-05-01T10:00:00+03:00'],
+                            'price_sold'      => ['type' => 'string', 'nullable' => true, 'example' => '155 000 Tshs'],
+                            'total_available' => ['type' => 'integer', 'nullable' => true, 'description' => 'Remaining stock at the time this sale was recorded', 'example' => 1],
+                            'qty'             => ['type' => 'integer', 'description' => 'Number of units in this sale', 'example' => 1],
+                            'created_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],
                     ],
                     'Content' => [

@@ -69,6 +69,23 @@ class SoldCarResource extends Resource
                     ->label('Sold At')
                     ->dateTime('M d, Y H:i')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('total_available')
+                    ->label('Qty Left')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($state) => match (true) {
+                        $state === null   => 'gray',
+                        $state === 0      => 'danger',
+                        $state <= 2       => 'warning',
+                        default           => 'success',
+                    }),
+                Tables\Columns\TextColumn::make('qty')
+                    ->label('Qty')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->badge()
+                    ->color('primary'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Recorded At')
                     ->dateTime('M d, Y')

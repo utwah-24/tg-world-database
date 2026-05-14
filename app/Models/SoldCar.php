@@ -13,6 +13,8 @@ class SoldCar extends Model
         'car_pics',
         'sold_at',
         'price_sold',
+        'total_available',
+        'qty',
     ];
 
     protected $casts = [

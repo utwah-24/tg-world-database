@@ -107,6 +107,8 @@ class CarController extends Controller
             'is_sold' => $car->is_sold,
             'registration' => $car->registration,
             'registration_number' => $car->registration_number,
+            'in_dar'   => $car->in_dar,
+            'location' => $car->location,
             'total_available' => $car->total_available,
             'category' => $this->categoryNameFromKey($categoryKey),
             'created_at' => $car->created_at,
