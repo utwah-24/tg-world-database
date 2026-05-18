@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Process\Process;
 
 class AutoSyncFromLive
 {
@@ -19,8 +20,10 @@ class AutoSyncFromLive
             // Fire in the background so the page loads instantly.
             // The local DB is updated while you browse; the next refresh
             // will show the latest data.
-            $artisan = PHP_BINARY.' '.base_path('artisan');
-            exec("{$artisan} sync:pull > /dev/null 2>&1 &");
+            $process = new Process([PHP_BINARY, base_path('artisan'), 'sync:pull']);
+            $process->setTimeout(null);
+            $process->disableOutput();
+            $process->start();
         }
 
         return $next($request);
