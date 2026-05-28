@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 
 class OrderResource extends Resource
@@ -270,11 +271,11 @@ class OrderResource extends Resource
             return $path;
         }
 
-        // Files are stored on the live server under /public/storage/.
-        // Using sync.live_url ensures this works in both local dev and production.
-        $base = rtrim(config('services.sync.live_url', config('app.url')), '/');
-
-        return $base . '/public/storage/' . ltrim($path, '/');
+        // Use the public disk URL config (APP_URL . '/storage') so the path is
+        // correct regardless of whether APP_URL already includes '/public' (cPanel)
+        // or not (standard Laravel setup). Hardcoding '/public/storage/' here
+        // would produce a double '/public/public/' on cPanel hosts.
+        return Storage::disk('public')->url($path);
     }
 
     public static function getRelations(): array
