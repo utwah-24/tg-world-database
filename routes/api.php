@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\Api\LogoController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\SoldCarController;
+use App\Http\Controllers\Api\TestDriveController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -24,3 +25,4 @@ Route::get('/orders', [OrderController::class, 'index']);
 Route::get('/orders/{id}', [OrderController::class, 'show'])->whereNumber('id');
 Route::get('/sold-cars', [SoldCarController::class, 'index']);
 Route::get('/sold-cars/{id}', [SoldCarController::class, 'show'])->whereNumber('id');
+Route::post('/test-drives', [TestDriveController::class, 'store']);

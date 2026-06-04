@@ -395,6 +395,38 @@ class SwaggerController extends Controller
                         ],
                     ],
                 ],
+                '/api/test-drives' => [
+                    'post' => [
+                        'tags' => ['Test Drives'],
+                        'summary' => 'Book a test drive',
+                        'description' => 'Submitted from the website. Accepts multipart/form-data so the car photo can be uploaded alongside the booking details.',
+                        'requestBody' => [
+                            'required' => true,
+                            'content' => [
+                                'multipart/form-data' => [
+                                    'schema' => ['$ref' => '#/components/schemas/TestDriveRequest'],
+                                ],
+                            ],
+                        ],
+                        'responses' => [
+                            '201' => [
+                                'description' => 'Test drive booked successfully',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'message' => ['type' => 'string', 'example' => 'Test drive booked successfully.'],
+                                                'data'    => ['$ref' => '#/components/schemas/TestDrive'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            '422' => ['description' => 'Validation error'],
+                        ],
+                    ],
+                ],
                 '/api/sold-cars' => [
                     'get' => [
                         'tags' => ['Sold Cars'],
@@ -511,6 +543,7 @@ class SwaggerController extends Controller
                             ],
                             'car_price' => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
                             'car_description' => ['type' => 'string', 'nullable' => true],
+                            'notes' => ['type' => 'string', 'nullable' => true, 'description' => 'Additional notes or details about the car (supports full paragraphs)'],
                             'type' => [
                                 'type' => 'string',
                                 'nullable' => true,
@@ -623,6 +656,30 @@ class SwaggerController extends Controller
                             'qty'             => ['type' => 'integer', 'description' => 'Number of units in this sale', 'example' => 1],
                             'created_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at'      => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                        ],
+                    ],
+                    'TestDriveRequest' => [
+                        'type' => 'object',
+                        'required' => ['car_name', 'booked_at'],
+                        'properties' => [
+                            'car_name'  => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'car_id'    => ['type' => 'integer', 'nullable' => true, 'description' => 'Optional — auto-resolved from car_name if omitted', 'example' => 12],
+                            'year'      => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'photo'     => ['type' => 'string', 'format' => 'binary', 'nullable' => true, 'description' => 'Car photo (JPEG/PNG/WebP, max 10 MB)'],
+                            'booked_at' => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-06-15T10:00:00'],
+                        ],
+                    ],
+                    'TestDrive' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'id'         => ['type' => 'integer', 'example' => 1],
+                            'car_id'     => ['type' => 'integer', 'nullable' => true, 'example' => 12],
+                            'car_name'   => ['type' => 'string', 'example' => 'LANDCRUISER ZX'],
+                            'year'       => ['type' => 'string', 'nullable' => true, 'example' => '2024'],
+                            'photo'      => ['type' => 'string', 'format' => 'uri', 'nullable' => true, 'description' => 'Full URL to the car photo'],
+                            'booked_at'  => ['type' => 'string', 'format' => 'date-time', 'example' => '2026-06-15T10:00:00+03:00'],
+                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],
                     ],
                     'Content' => [

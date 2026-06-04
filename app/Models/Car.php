@@ -18,6 +18,7 @@ class Car extends Model
         'car_pic',
         'car_price',
         'car_description',
+        'notes',
         'type',
         'brand_id',
         'brand_label',

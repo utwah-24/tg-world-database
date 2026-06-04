@@ -89,6 +89,7 @@ class CarController extends Controller
             'car_pic' => $car->car_pic,
             'car_price' => $car->car_price,
             'car_description' => $car->car_description,
+            'notes' => $car->notes,
             'type' => $car->type,
             'condition' => $car->condition,
             'color' => $car->color,

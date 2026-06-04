@@ -219,6 +219,11 @@ class CarResource extends Resource
                 Forms\Components\Textarea::make('car_description')
                     ->columnSpanFull(),
 
+                Forms\Components\Textarea::make('notes')
+                    ->columnSpanFull()
+                    ->rows(5)
+                    ->helperText('Internal notes or additional details about this car (supports full paragraphs).'),
+
                 Forms\Components\Toggle::make('registration')
                     ->label('Registered')
                     ->helperText('Toggle on if this car is registered, off if unregistered.')
