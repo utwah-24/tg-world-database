@@ -13,6 +13,9 @@ class TestDrive extends Model
         'year',
         'photo',
         'booked_at',
+        'customer_name',
+        'phone',
+        'email',
     ];
 
     protected $casts = [

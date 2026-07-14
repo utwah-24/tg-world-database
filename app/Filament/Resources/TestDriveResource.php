@@ -31,8 +31,29 @@ class TestDriveResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Booking Info')
+                Forms\Components\Section::make('Customer Info')
                     ->description('Submitted by the customer from the website.')
+                    ->schema([
+                        Forms\Components\TextInput::make('customer_name')
+                            ->label('Customer Name')
+                            ->required()
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Phone')
+                            ->tel()
+                            ->required()
+                            ->maxLength(20),
+
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->required()
+                            ->maxLength(255),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Booking Info')
                     ->schema([
                         Forms\Components\TextInput::make('car_name')
                             ->required()
@@ -79,6 +100,19 @@ class TestDriveResource extends Resource
                     ->disk('public')
                     ->height(48)
                     ->defaultImageUrl(null),
+
+                Tables\Columns\TextColumn::make('customer_name')
+                    ->label('Customer')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('phone')
+                    ->searchable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('car_name')
                     ->label('Car')

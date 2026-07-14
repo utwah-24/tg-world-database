@@ -60,10 +60,12 @@ class LiveSyncService
             // ── Persist in FK-safe order ─────────────────────────────────────
             $this->saveCompanies($companies);
             $this->saveCars($cars);       // also saves brands + vehicle models
+            Company::backfillLogosFromCars();
             $this->saveContent($content);
             $this->saveLogos($logos);
             $this->saveOrders($orders);
             $this->saveSoldCars($soldCars);
+            ComingSoonService::expireDueCars();
 
             return true;
         } catch (\Throwable $e) {
@@ -86,7 +88,7 @@ class LiveSyncService
                 ['id' => $item['company_id']],
                 [
                     'name' => $item['company_label'],
-                    'logo' => $item['logo'] ?? null,
+                    'logo' => Company::normalizeStoredPath($item['logo'] ?? $item['company_logo_path'] ?? null),
                 ]
             );
         }
@@ -141,6 +143,8 @@ class LiveSyncService
         // 4. Upsert remaining cars — car_id is the PK but not in $fillable,
         //    so we set it directly on the model instance to preserve the live ID.
         foreach ($items as $item) {
+            $comingSoon = ComingSoonService::normalizeSyncedCar($item);
+
             $data = [
                 'car_name'            => $item['car_name']            ?? null,
                 'year'                => $item['year']                ?? null,
@@ -159,9 +163,10 @@ class LiveSyncService
                 'brand_label'         => $item['brand']               ?? null,
                 'vehicle_model_id'    => $item['model_id']            ?? null,
                 'model_label'         => $item['model']               ?? null,
-                'is_coming_soon'      => $item['is_coming_soon']      ?? false,
-                'arrival_date'        => $item['arrival_date']        ?? null,
+                'is_coming_soon'      => $comingSoon['is_coming_soon'],
+                'arrival_date'        => $comingSoon['arrival_date'],
                 'is_sold'             => $item['is_sold']             ?? false,
+                'test_drive_available' => $item['test_drive_available'] ?? false,
                 'registration'        => $item['registration']        ?? null,
                 'registration_number' => $item['registration_number'] ?? null,
                 'in_dar'              => $item['in_dar']              ?? true,
@@ -180,9 +185,12 @@ class LiveSyncService
                     ->update($data);
             }
 
+            $createdAt = $comingSoon['created_at']
+                ?? Carbon::parse($item['created_at'] ?? now());
+
             // Restore original live timestamps so newest-first sort is correct
             DB::table('cars')->where('car_id', $item['car_id'])->update([
-                'created_at' => Carbon::parse($item['created_at'] ?? now())->toDateTimeString(),
+                'created_at' => $createdAt->toDateTimeString(),
                 'updated_at' => Carbon::parse($item['updated_at'] ?? now())->toDateTimeString(),
             ]);
         }

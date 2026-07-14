@@ -13,7 +13,7 @@ class CompanyController extends Controller
         $companies = Company::orderBy('name')->get()->map(fn (Company $c) => [
             'company_id'        => $c->id,
             'company_label'     => $c->name,
-            'logo'              => $c->logo,
+            'logo'              => $c->resolvedLogoPath(),
             'company_logo_path' => $c->logo_url,
         ]);
 

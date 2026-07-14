@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Car;
 use App\Models\Company;
 use App\Models\VehicleModel;
+use App\Services\ComingSoonService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -31,6 +32,8 @@ class CarResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        ComingSoonService::expireDueCars();
+
         return parent::getEloquentQuery()
             ->with(['company', 'brand', 'vehicleModel'])
             ->orderBy('created_at', 'desc');
@@ -224,6 +227,12 @@ class CarResource extends Resource
                     ->rows(5)
                     ->helperText('Internal notes or additional details about this car (supports full paragraphs).'),
 
+                Forms\Components\Toggle::make('test_drive_available')
+                    ->label('Test drive')
+                    ->helperText('Toggle on if this car is available for test drives, off if not.')
+                    ->default(false)
+                    ->columnSpanFull(),
+
                 Forms\Components\Toggle::make('registration')
                     ->label('Registered')
                     ->helperText('Toggle on if this car is registered, off if unregistered.')
@@ -404,6 +413,15 @@ class CarResource extends Resource
                         'third_party' => 'info',
                         default => 'gray',
                     }),
+
+                Tables\Columns\IconColumn::make('test_drive_available')
+                    ->label('Test Drive')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('gray')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('registration')
                     ->label('Registration')

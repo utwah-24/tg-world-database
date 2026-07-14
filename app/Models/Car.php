@@ -19,6 +19,7 @@ class Car extends Model
         'car_price',
         'car_description',
         'notes',
+        'test_drive_available',
         'type',
         'brand_id',
         'brand_label',
@@ -45,7 +46,8 @@ class Car extends Model
         'car_pic' => 'array',
         'arrival_date' => 'date',
         'total_available' => 'integer',
-        'in_dar'          => 'boolean',
+        'in_dar'                => 'boolean',
+        'test_drive_available'  => 'boolean',
     ];
 
     public function content(): HasOne

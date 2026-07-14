@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Car;
+use App\Services\ComingSoonService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -18,6 +19,8 @@ class CarController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        ComingSoonService::expireDueCars();
+
         $category = $request->query('category');
         $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
 
@@ -55,6 +58,8 @@ class CarController extends Controller
 
     public function thirdParty(): JsonResponse
     {
+        ComingSoonService::expireDueCars();
+
         $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
         $thirdPartyCars = $this->filterCarsByCategory($cars, 'THIRD PARTY');
 
@@ -65,6 +70,8 @@ class CarController extends Controller
 
     public function show(int $carId): JsonResponse
     {
+        ComingSoonService::expireDueCars();
+
         $car = Car::with(['company', 'brand', 'vehicleModel'])->where('car_id', $carId)->first();
 
         if (! $car) {
@@ -106,6 +113,7 @@ class CarController extends Controller
             'is_coming_soon' => $car->is_coming_soon,
             'arrival_date' => $car->arrival_date?->toDateString(),
             'is_sold' => $car->is_sold,
+            'test_drive_available' => $car->test_drive_available,
             'registration' => $car->registration,
             'registration_number' => $car->registration_number,
             'in_dar'   => $car->in_dar,

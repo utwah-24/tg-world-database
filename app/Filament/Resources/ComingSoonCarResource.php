@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ComingSoonCarResource\Pages;
 use App\Models\Car;
+use App\Services\ComingSoonService;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
@@ -29,6 +30,8 @@ class ComingSoonCarResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        ComingSoonService::expireDueCars();
+
         return parent::getEloquentQuery()
             ->with(['company', 'brand', 'vehicleModel'])
             ->where('is_coming_soon', 'set')

@@ -16,7 +16,9 @@ class AutoSyncFromLive
             && ! $request->hasHeader('X-Livewire')
             && $request->isMethodSafe();
 
-        if ($isNavigation && config('services.sync.live_url')) {
+        if ($isNavigation
+            && config('services.sync.pull_enabled')
+            && filled(config('services.sync.live_url'))) {
             // Fire in the background so the page loads instantly.
             // The local DB is updated while you browse; the next refresh
             // will show the latest data.

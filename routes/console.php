@@ -12,11 +12,13 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Run daily at midnight to clear Coming Soon status from cars whose arrival date has passed
-Schedule::command('cars:clear-coming-soon')->dailyAt('00:00');
+// Clear expired Coming Soon cars every minute (runs on all environments including production)
+Schedule::command('cars:clear-coming-soon')->everyMinute()->withoutOverlapping();
 
-// Pull new orders from the live site every minute so email notifications are near-instant
-Schedule::command('sync:pull')->everyMinute()->withoutOverlapping();
+// Pull from live — LOCAL DEV ONLY. Disabled on production (see LIVE_APP_URL / SYNC_PULL_ENABLED in .env)
+if (config('services.sync.pull_enabled') && filled(config('services.sync.live_url'))) {
+    Schedule::command('sync:pull')->everyMinute()->withoutOverlapping();
+}
 
 Artisan::command('cars:sync-from-folders', function () {
     $basePath = public_path('TGworld');
