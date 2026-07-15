@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\PromotionService;
 use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Car extends Model
@@ -40,6 +42,8 @@ class Car extends Model
         'total_available',
         'in_dar',
         'location',
+        'promo_set',
+        'promo_price',
     ];
 
     protected $casts = [
@@ -48,11 +52,24 @@ class Car extends Model
         'total_available' => 'integer',
         'in_dar'                => 'boolean',
         'test_drive_available'  => 'boolean',
+        'promo_set'             => 'boolean',
     ];
 
     public function content(): HasOne
     {
         return $this->hasOne(Content::class, 'car_id', 'car_id');
+    }
+
+    public function promotions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Promotion::class,
+            'car_promotion',
+            'car_id',
+            'promoID',
+            'car_id',
+            'promoID',
+        )->withTimestamps();
     }
 
     public function company(): BelongsTo
@@ -191,6 +208,124 @@ class Car extends Model
         $normalized = $frac !== null && $frac !== '' ? $int.'.'.$frac : $int;
 
         return $normalized.' Million Tshs';
+    }
+
+    /**
+     * Compute and return the promo price to persist for a list price + promo IDs.
+     * Uses the highest price_reduction among the selected promotions.
+     */
+    public static function resolveStoredPromoPrice(?string $storedCarPrice, iterable $promoIds): ?string
+    {
+        $ids = collect($promoIds)->filter()->unique()->values();
+        if ($ids->isEmpty()) {
+            return null;
+        }
+
+        $bestPromoId = Promotion::query()
+            ->whereIn('promoID', $ids)
+            ->where('status', 'active')
+            ->get()
+            ->filter(fn (Promotion $promo) => PromotionService::isEffective($promo))
+            ->sortByDesc('price_reduction')
+            ->value('promoID');
+
+        if (! $bestPromoId) {
+            return null;
+        }
+
+        return self::discountedPricePreview(
+            self::carPriceDigitsForForm($storedCarPrice),
+            $bestPromoId,
+        );
+    }
+
+    public function hasEffectivePromotion(): bool
+    {
+        return $this->promotions
+            ->contains(fn (Promotion $promo) => PromotionService::isEffective($promo));
+    }
+
+    public function clearPromotionPricing(): void
+    {
+        $this->promo_set = false;
+        $this->promo_price = null;
+        $this->saveQuietly();
+    }
+
+    /**
+     * Recalculate promo pricing or clear it when no effective promotions remain.
+     */
+    public function refreshPromotionState(): void
+    {
+        if (! $this->promo_set) {
+            $this->clearPromotionPricing();
+
+            return;
+        }
+
+        $effectiveIds = $this->promotions()
+            ->get()
+            ->filter(fn (Promotion $promo) => PromotionService::isEffective($promo))
+            ->pluck('promoID');
+
+        if ($effectiveIds->isEmpty()) {
+            $this->clearPromotionPricing();
+
+            return;
+        }
+
+        $this->promo_price = self::resolveStoredPromoPrice($this->car_price, $effectiveIds);
+        $this->saveQuietly();
+    }
+
+    /**
+     * Recalculate and persist promo_price from car_price + linked promotions.
+     */
+    public function refreshPromoPrice(): void
+    {
+        $this->refreshPromotionState();
+    }
+
+    /**
+     * Discounted price from form digits + selected promo id(s) (dashboard preview).
+     */
+    public static function discountedPricePreview(?string $priceDigits, mixed $promoIds): ?string
+    {
+        if ($priceDigits === null || trim((string) $priceDigits) === '') {
+            return null;
+        }
+
+        $ids = is_array($promoIds) || $promoIds instanceof \Illuminate\Support\Collection
+            ? collect($promoIds)->filter()->values()
+            : collect(blank($promoIds) ? [] : [$promoIds]);
+
+        if ($ids->isEmpty()) {
+            return null;
+        }
+
+        $promo = Promotion::query()
+            ->whereIn('promoID', $ids)
+            ->orderByDesc('price_reduction')
+            ->first();
+
+        if (! $promo) {
+            return null;
+        }
+
+        $pct = (int) $promo->price_reduction;
+        if ($pct <= 0 || $pct > 100) {
+            return null;
+        }
+
+        $s = trim(str_replace(',', '.', (string) $priceDigits));
+        if ($s === '' || ! preg_match('/^\d+(\.\d+)?$/', $s)) {
+            return null;
+        }
+
+        $reduced = (float) $s * (1 - ($pct / 100));
+        $formatted = rtrim(rtrim(number_format($reduced, 2, '.', ''), '0'), '.');
+
+        return self::carPriceFromFormInput($formatted);
     }
 
     /**

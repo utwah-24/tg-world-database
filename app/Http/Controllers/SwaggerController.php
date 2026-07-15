@@ -203,6 +203,32 @@ class SwaggerController extends Controller
                         ],
                     ],
                 ],
+                '/api/promotions' => [
+                    'get' => [
+                        'tags' => ['Promotions'],
+                        'summary' => 'Get all promotions',
+                        'responses' => [
+                            '200' => [
+                                'description' => 'Promotions list',
+                                'content' => [
+                                    'application/json' => [
+                                        'schema' => [
+                                            'type' => 'object',
+                                            'properties' => [
+                                                'data' => [
+                                                    'type' => 'array',
+                                                    'items' => [
+                                                        '$ref' => '#/components/schemas/Promotion',
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
                 '/api/content' => [
                     'get' => [
                         'tags' => ['Content'],
@@ -542,6 +568,7 @@ class SwaggerController extends Controller
                                 ],
                             ],
                             'car_price' => ['type' => 'string', 'nullable' => true, 'example' => '155Million With New Registration'],
+                            'promo_price' => ['type' => 'string', 'nullable' => true, 'description' => 'Stored discounted price from the highest linked promotion; null if none', 'example' => '139.5 Million Tshs'],
                             'car_description' => ['type' => 'string', 'nullable' => true],
                             'notes' => ['type' => 'string', 'nullable' => true, 'description' => 'Additional notes or details about the car (supports full paragraphs)'],
                             'type' => [
@@ -575,6 +602,23 @@ class SwaggerController extends Controller
                             'registration_number' => ['type' => 'string', 'nullable' => true, 'example' => 'T 123 ABC'],
                             'in_dar' => ['type' => 'boolean', 'description' => 'True = car is in Dar es Salaam. False = see location field.', 'example' => true],
                             'location' => ['type' => 'string', 'nullable' => true, 'description' => 'Custom location when in_dar is false', 'example' => 'Arusha'],
+                            'promo_set' => ['type' => 'boolean', 'description' => 'True when the promotion toggle is on for this car', 'example' => true],
+                            'promotions' => [
+                                'type' => 'array',
+                                'items' => [
+                                    'type' => 'object',
+                                    'properties' => [
+                                        'promoID' => ['type' => 'integer', 'example' => 1],
+                                        'promo_name' => ['type' => 'string', 'example' => 'Eid Special Offer'],
+                                        'price_reduction' => ['type' => 'integer', 'description' => 'Percentage off, e.g. 10 means 10%', 'example' => 10],
+                                        'price_reduction_label' => ['type' => 'string', 'example' => '10%'],
+                                        'start_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-07-01'],
+                                        'end_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-07-31'],
+                                        'status' => ['type' => 'string', 'enum' => ['active', 'inactive'], 'example' => 'active'],
+                                        'is_active' => ['type' => 'boolean', 'example' => true],
+                                    ],
+                                ],
+                            ],
                             'total_available' => ['type' => 'integer', 'description' => 'Number of units currently available for this car', 'example' => 3],
                             'category' => ['type' => 'string', 'nullable' => true, 'example' => 'Third party'],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
@@ -603,6 +647,33 @@ class SwaggerController extends Controller
                             'id' => ['type' => 'integer', 'example' => 1],
                             'name' => ['type' => 'string', 'example' => 'logo-dark'],
                             'path' => ['type' => 'string', 'example' => 'logo-dark.jpeg'],
+                            'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                            'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
+                        ],
+                    ],
+                    'Promotion' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'promoID' => ['type' => 'integer', 'example' => 1],
+                            'promo_name' => ['type' => 'string', 'example' => 'Eid Special Offer'],
+                            'price_reduction' => ['type' => 'integer', 'description' => 'Percentage off car price, e.g. 10 means 10%', 'example' => 10],
+                            'price_reduction_label' => ['type' => 'string', 'example' => '10%'],
+                            'promo_pics' => [
+                                'type' => 'array',
+                                'nullable' => true,
+                                'items' => ['type' => 'string'],
+                                'description' => 'Relative paths under public/',
+                                'example' => ['TGworld/promotions/banner-1.jpg'],
+                            ],
+                            'promo_pic_urls' => [
+                                'type' => 'array',
+                                'items' => ['type' => 'string', 'format' => 'uri'],
+                                'description' => 'Fully-resolved absolute URLs for each promo image',
+                            ],
+                            'start_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-07-01'],
+                            'end_date' => ['type' => 'string', 'format' => 'date', 'example' => '2026-07-31'],
+                            'status' => ['type' => 'string', 'enum' => ['active', 'inactive'], 'description' => 'Manual status; also synced automatically from start/end dates', 'example' => 'active'],
+                            'is_active' => ['type' => 'boolean', 'description' => 'True when status is active and today is between start_date and end_date', 'example' => true],
                             'created_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                             'updated_at' => ['type' => 'string', 'format' => 'date-time', 'nullable' => true],
                         ],

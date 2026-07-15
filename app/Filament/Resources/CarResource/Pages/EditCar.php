@@ -65,6 +65,7 @@ class EditCar extends EditRecord
         $data['is_coming_soon'] = $data['is_coming_soon'] === 'set';
         $data['is_sold'] = $data['is_sold'] === 'sold';
         $data['registration'] = $data['registration'] === 'registered';
+        $data['promo_set'] = (bool) ($data['promo_set'] ?? false);
 
         return $data;
     }
@@ -129,8 +130,26 @@ class EditCar extends EditRecord
         }
 
         $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
+        $data['promo_set'] = ! empty($data['promo_set']);
+
+        // Relationship sync is handled by Filament Select::relationship().
+        // promo_price is recalculated in afterSave().
+        unset($data['promotions']);
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        if (! $this->record->promo_set) {
+            $this->record->promotions()->sync([]);
+            $this->record->promo_price = null;
+            $this->record->saveQuietly();
+
+            return;
+        }
+
+        $this->record->refreshPromoPrice();
     }
 
     private function resolveCompanyId(?string $name, ?string $logo): ?int

@@ -15,6 +15,9 @@ Artisan::command('inspire', function () {
 // Clear expired Coming Soon cars every minute (runs on all environments including production)
 Schedule::command('cars:clear-coming-soon')->everyMinute()->withoutOverlapping();
 
+// Sync promotion status from start/end dates and reset expired car pricing
+Schedule::command('promotions:sync-status')->everyFiveMinutes()->withoutOverlapping();
+
 // Pull from live — LOCAL DEV ONLY. Disabled on production (see LIVE_APP_URL / SYNC_PULL_ENABLED in .env)
 if (config('services.sync.pull_enabled') && filled(config('services.sync.live_url'))) {
     Schedule::command('sync:pull')->everyMinute()->withoutOverlapping();

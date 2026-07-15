@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('promotions', function (Blueprint $table) {
+            $table->string('status')->default('inactive')->after('end_date');
+        });
+
+        $today = now()->toDateString();
+
+        DB::table('promotions')
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->update(['status' => 'active']);
+    }
+
+    public function down(): void
+    {
+        Schema::table('promotions', function (Blueprint $table) {
+            $table->dropColumn('status');
+        });
+    }
+};

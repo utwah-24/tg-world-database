@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Services\ComingSoonService;
+use App\Services\PromotionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,9 +21,10 @@ class CarController extends Controller
     public function index(Request $request): JsonResponse
     {
         ComingSoonService::expireDueCars();
+        PromotionService::syncStatuses();
 
         $category = $request->query('category');
-        $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
+        $cars = Car::with(['company', 'brand', 'vehicleModel', 'promotions'])->orderBy('car_id')->get();
 
         if ($category !== null) {
             $normalizedCategory = $this->normalizeCategory((string) $category);
@@ -59,8 +61,9 @@ class CarController extends Controller
     public function thirdParty(): JsonResponse
     {
         ComingSoonService::expireDueCars();
+        PromotionService::syncStatuses();
 
-        $cars = Car::with(['company', 'brand', 'vehicleModel'])->orderBy('car_id')->get();
+        $cars = Car::with(['company', 'brand', 'vehicleModel', 'promotions'])->orderBy('car_id')->get();
         $thirdPartyCars = $this->filterCarsByCategory($cars, 'THIRD PARTY');
 
         return response()->json([
@@ -71,8 +74,9 @@ class CarController extends Controller
     public function show(int $carId): JsonResponse
     {
         ComingSoonService::expireDueCars();
+        PromotionService::syncStatuses();
 
-        $car = Car::with(['company', 'brand', 'vehicleModel'])->where('car_id', $carId)->first();
+        $car = Car::with(['company', 'brand', 'vehicleModel', 'promotions'])->where('car_id', $carId)->first();
 
         if (! $car) {
             return response()->json([
@@ -118,6 +122,18 @@ class CarController extends Controller
             'registration_number' => $car->registration_number,
             'in_dar'   => $car->in_dar,
             'location' => $car->location,
+            'promo_set' => (bool) $car->promo_set,
+            'promo_price' => $car->promo_set && $car->promo_price ? $car->promo_price : null,
+            'promotions' => $car->promotions->map(fn ($promo) => [
+                'promoID' => $promo->promoID,
+                'promo_name' => $promo->promo_name,
+                'price_reduction' => $promo->price_reduction,
+                'price_reduction_label' => $promo->price_reduction_label,
+                'start_date' => $promo->start_date?->toDateString(),
+                'end_date' => $promo->end_date?->toDateString(),
+                'status' => $promo->status,
+                'is_active' => $promo->isCurrentlyActive(),
+            ])->values(),
             'total_available' => $car->total_available,
             'category' => $this->categoryNameFromKey($categoryKey),
             'created_at' => $car->created_at,

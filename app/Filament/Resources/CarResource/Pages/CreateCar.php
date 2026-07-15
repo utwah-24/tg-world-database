@@ -49,6 +49,9 @@ class CreateCar extends CreateRecord
         $data['is_sold'] = ! empty($data['is_sold']) ? 'sold' : 'available';
         $data['sold_at'] = $data['is_sold'] === 'sold' ? now() : null;
         $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
+        $data['promo_set'] = ! empty($data['promo_set']);
+
+        unset($data['promotions']);
 
         return $data;
     }
@@ -56,6 +59,14 @@ class CreateCar extends CreateRecord
     protected function afterCreate(): void
     {
         $car = $this->record;
+
+        if (! $car->promo_set) {
+            $car->promotions()->sync([]);
+            $car->promo_price = null;
+            $car->saveQuietly();
+        } else {
+            $car->refreshPromoPrice();
+        }
 
         if ($car->is_sold === 'sold') {
             SoldCar::create([

@@ -6,6 +6,7 @@ use App\Filament\Resources\CarResource\Pages;
 use App\Models\Brand;
 use App\Models\Car;
 use App\Models\Company;
+use App\Models\Promotion;
 use App\Models\VehicleModel;
 use App\Services\ComingSoonService;
 use Filament\Forms;
@@ -35,7 +36,7 @@ class CarResource extends Resource
         ComingSoonService::expireDueCars();
 
         return parent::getEloquentQuery()
-            ->with(['company', 'brand', 'vehicleModel'])
+            ->with(['company', 'brand', 'vehicleModel', 'promotions'])
             ->orderBy('created_at', 'desc');
     }
 
@@ -71,6 +72,7 @@ class CarResource extends Resource
                     ->suffix('Million Tshs')
                     ->placeholder('e.g. 295 or 28.5')
                     ->maxLength(16)
+                    ->live(onBlur: true)
                     ->extraInputAttributes(['inputmode' => 'decimal', 'pattern' => '[0-9]*[.]?[0-9]*', 'autocomplete' => 'off'])
                     ->rules(['nullable', 'regex:/^(\d+(\.\d+)?)?$/'])
                     ->helperText('Millions of Tshs — whole number or decimal. “Million Tshs” is added when you save.'),
@@ -259,6 +261,81 @@ class CarResource extends Resource
                     ->maxLength(255)
                     ->visible(fn (Get $get): bool => ! (bool) $get('in_dar'))
                     ->required(fn (Get $get): bool => ! (bool) $get('in_dar'))
+                    ->columnSpanFull(),
+
+                Forms\Components\Toggle::make('promo_set')
+                    ->label('Promotion')
+                    ->helperText('Toggle on to link this car to one or more promotions.')
+                    ->live()
+                    ->columnSpanFull(),
+
+                Forms\Components\Select::make('promotions')
+                    ->label('Select Promotions')
+                    ->multiple()
+                    ->relationship(
+                        name: 'promotions',
+                        titleAttribute: 'promo_name',
+                        modifyQueryUsing: function (Builder $query, ?Car $record): Builder {
+                            return $query
+                                ->where('status', 'active')
+                                ->where(function (Builder $q) use ($record) {
+                                    $q->whereDate('start_date', '<=', now()->toDateString())
+                                        ->whereDate('end_date', '>=', now()->toDateString());
+
+                                    if ($record) {
+                                        $attached = $record->promotions()->pluck('promotions.promoID');
+                                        if ($attached->isNotEmpty()) {
+                                            $q->orWhereIn('promotions.promoID', $attached);
+                                        }
+                                    }
+                                })
+                                ->orderBy('promo_name');
+                        },
+                    )
+                    ->getOptionLabelFromRecordUsing(
+                        fn (Promotion $record): string => $record->promo_name.' ('.$record->price_reduction_label.')'
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->live()
+                    ->visible(fn (Get $get): bool => (bool) $get('promo_set'))
+                    ->required(fn (Get $get): bool => (bool) $get('promo_set'))
+                    ->dehydrated(fn (Get $get): bool => (bool) $get('promo_set'))
+                    ->helperText('One promo can apply to many cars, and one car can have many promos. Promo price uses the highest discount.')
+                    ->columnSpanFull(),
+
+                Forms\Components\Placeholder::make('promo_price_preview')
+                    ->label('Promo Price')
+                    ->content(function (Get $get): HtmlString {
+                        $price = Car::discountedPricePreview(
+                            $get('car_price'),
+                            $get('promotions') ?? [],
+                        );
+
+                        if (! $price) {
+                            return new HtmlString(
+                                '<span style="color:#9ca3af;font-style:italic;">Select a promotion to see the discounted price.</span>'
+                            );
+                        }
+
+                        $ids = collect($get('promotions') ?? [])->filter()->all();
+                        $best = Promotion::query()
+                            ->whereIn('promoID', $ids)
+                            ->orderByDesc('price_reduction')
+                            ->first();
+                        $pct = $best?->price_reduction_label ?? '';
+
+                        return new HtmlString(
+                            '<span style="font-size:1.05rem;font-weight:600;color:#059669;">'
+                            .e($price)
+                            .'</span>'
+                            .($pct !== ''
+                                ? ' <span style="color:#6b7280;font-size:0.875rem;">('.$pct.' off)</span>'
+                                : '')
+                        );
+                    })
+                    ->visible(fn (Get $get): bool => (bool) $get('promo_set'))
                     ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('total_available')
@@ -455,6 +532,27 @@ class CarResource extends Resource
                     ->label('Location')
                     ->placeholder('Dar es Salaam')
                     ->searchable()
+                    ->toggleable(),
+
+                Tables\Columns\IconColumn::make('promo_set')
+                    ->label('Promo')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-tag')
+                    ->falseIcon('heroicon-o-minus')
+                    ->trueColor('success')
+                    ->falseColor('gray')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('promotions.promo_name')
+                    ->label('Promotions')
+                    ->badge()
+                    ->separator(',')
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('promo_price')
+                    ->label('Promo Price')
+                    ->placeholder('—')
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('is_sold')

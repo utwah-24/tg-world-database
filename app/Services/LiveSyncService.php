@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Content;
 use App\Models\Logo;
 use App\Models\Order;
+use App\Models\Promotion;
 use App\Models\SoldCar;
 use App\Models\VehicleModel;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -46,19 +47,22 @@ class LiveSyncService
                 $pool->as('cars')->timeout(15)->get("{$this->base}/api/cars"),
                 $pool->as('content')->timeout(15)->get("{$this->base}/api/content"),
                 $pool->as('logos')->timeout(15)->get("{$this->base}/api/logos"),
+                $pool->as('promotions')->timeout(15)->get("{$this->base}/api/promotions"),
                 $pool->as('orders')->timeout(15)->get("{$this->base}/api/orders"),
                 $pool->as('sold_cars')->timeout(15)->get("{$this->base}/api/sold-cars"),
             ]);
 
-            $companies = $this->items($responses['companies']);
-            $cars      = $this->items($responses['cars']);
-            $content   = $this->items($responses['content']);
-            $logos     = $this->items($responses['logos']);
-            $orders    = $this->items($responses['orders']);
-            $soldCars  = $this->items($responses['sold_cars']);
+            $companies  = $this->items($responses['companies']);
+            $cars       = $this->items($responses['cars']);
+            $content    = $this->items($responses['content']);
+            $logos      = $this->items($responses['logos']);
+            $promotions = $this->items($responses['promotions']);
+            $orders     = $this->items($responses['orders']);
+            $soldCars   = $this->items($responses['sold_cars']);
 
             // ── Persist in FK-safe order ─────────────────────────────────────
             $this->saveCompanies($companies);
+            $this->savePromotions($promotions);
             $this->saveCars($cars);       // also saves brands + vehicle models
             Company::backfillLogosFromCars();
             $this->saveContent($content);
@@ -66,6 +70,7 @@ class LiveSyncService
             $this->saveOrders($orders);
             $this->saveSoldCars($soldCars);
             ComingSoonService::expireDueCars();
+            PromotionService::syncStatuses();
 
             return true;
         } catch (\Throwable $e) {
@@ -171,6 +176,8 @@ class LiveSyncService
                 'registration_number' => $item['registration_number'] ?? null,
                 'in_dar'              => $item['in_dar']              ?? true,
                 'location'            => $item['location']            ?? null,
+                'promo_set'           => $item['promo_set']           ?? ! empty($item['promotions']),
+                'promo_price'         => $item['promo_price']         ?? null,
                 'total_available'     => $item['total_available']     ?? null,
             ];
 
@@ -183,6 +190,24 @@ class LiveSyncService
                 Car::where('car_name', $item['car_name'])
                     ->where('year', $item['year'])
                     ->update($data);
+                $car = Car::where('car_name', $item['car_name'])
+                    ->where('year', $item['year'])
+                    ->first() ?? $car;
+            }
+
+            $promoIds = collect($item['promotions'] ?? [])
+                ->pluck('promoID')
+                ->filter()
+                ->values()
+                ->all();
+
+            if ($promoIds === [] && isset($item['promoID'])) {
+                $promoIds = array_filter([(int) $item['promoID']]);
+            }
+
+            if ($car->exists) {
+                $car->promotions()->sync($promoIds);
+                $car->refreshPromoPrice();
             }
 
             $createdAt = $comingSoon['created_at']
@@ -234,6 +259,31 @@ class LiveSyncService
 
         if (! empty($liveIds)) {
             Logo::whereNotIn('id', $liveIds)->delete();
+        }
+    }
+
+    // ── Promotions ────────────────────────────────────────────────────────────
+
+    private function savePromotions(array $items): void
+    {
+        $liveIds = collect($items)->pluck('promoID')->filter()->all();
+
+        foreach ($items as $item) {
+            Promotion::updateOrCreate(
+                ['promoID' => $item['promoID']],
+                [
+                    'promo_name'      => $item['promo_name'] ?? null,
+                    'price_reduction' => $item['price_reduction'] ?? 0,
+                    'promo_pics'      => $item['promo_pics'] ?? null,
+                    'start_date' => $item['start_date'] ?? null,
+                    'end_date'        => $item['end_date'] ?? null,
+                    'status'          => $item['status'] ?? 'inactive',
+                ]
+            );
+        }
+
+        if (! empty($liveIds)) {
+            Promotion::whereNotIn('promoID', $liveIds)->delete();
         }
     }
 
