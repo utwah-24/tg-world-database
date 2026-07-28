@@ -29,11 +29,16 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTPS_PORT }}
+          protocol: ftps
+          timeout: 600000
+          log-level: verbose
           server-dir: ${{ secrets.FTP_REMOTE_DIR }}
           exclude: |
             **/.git*
             **/.github/**
             **/node_modules/**
+            **/vendor/**
             **/tests/**
             **/.env
             **/.env.*
@@ -55,6 +60,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/esaloon/tgworld.e-saloon.online
+            /usr/local/bin/php /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction 2>/dev/null || composer install --no-dev --optimize-autoloader --no-interaction
             /usr/local/bin/php artisan migrate --force
             /usr/local/bin/php artisan config:clear
             /usr/local/bin/php artisan cache:clear
