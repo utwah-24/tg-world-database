@@ -50,20 +50,3 @@ jobs:
             **/README.md
             **/phpunit.xml
             **/.editorconfig
-
-      - name: Run post-deploy commands via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd /home/esaloon/tgworld.e-saloon.online
-            /usr/local/bin/php /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction 2>/dev/null || composer install --no-dev --optimize-autoloader --no-interaction
-            /usr/local/bin/php artisan migrate --force
-            /usr/local/bin/php artisan config:clear
-            /usr/local/bin/php artisan cache:clear
-            /usr/local/bin/php artisan route:clear
-            /usr/local/bin/php artisan view:clear
-            /usr/local/bin/php artisan promotions:sync-status
