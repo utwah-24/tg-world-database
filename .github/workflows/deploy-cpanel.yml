@@ -50,3 +50,61 @@ jobs:
             **/README.md
             **/phpunit.xml
             **/.editorconfig
+
+      - name: Clear live Laravel and Filament caches
+        env:
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+          FTP_PORT: ${{ secrets.FTPS_PORT }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_REMOTE_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          cache_file="deploy-cache-clear-$(openssl rand -hex 24).php"
+          cache_script="$(mktemp)"
+          trap 'rm -f "$cache_script"' EXIT
+
+          echo "::add-mask::$cache_file"
+
+          cat > "$cache_script" <<'PHP'
+          <?php
+
+          declare(strict_types=1);
+
+          header('Content-Type: text/plain; charset=UTF-8');
+
+          register_shutdown_function(static function (): void {
+              @unlink(__FILE__);
+          });
+
+          require __DIR__.'/../vendor/autoload.php';
+
+          $app = require_once __DIR__.'/../bootstrap/app.php';
+          $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+          $kernel->bootstrap();
+
+          $laravelExitCode = $kernel->call('optimize:clear');
+          $filamentExitCode = $kernel->call('filament:optimize-clear');
+
+          if ($laravelExitCode !== 0 || $filamentExitCode !== 0) {
+              http_response_code(500);
+              echo 'CACHE_CLEAR_FAILED';
+              exit;
+          }
+
+          echo 'CACHE_CLEAR_OK';
+          PHP
+
+          remote_dir="${FTP_REMOTE_DIR#/}"
+          remote_dir="${remote_dir%/}"
+
+          curl --silent --show-error --fail \
+            --ssl-reqd \
+            --ftp-pasv \
+            --user "$FTP_USER:$FTP_PASSWORD" \
+            --upload-file "$cache_script" \
+            "ftp://$FTP_HOST:$FTP_PORT/$remote_dir/public/$cache_file"
+
+          response="$(curl --silent --show-error --fail --retry 3 --retry-delay 2 \
+            "https://tgworld.e-saloon.online/$cache_file")"
+
+          test "$response" = 'CACHE_CLEAR_OK'
