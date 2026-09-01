@@ -72,6 +72,12 @@ class ContentResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ViewColumn::make('mobile_card')
+                    ->label('')
+                    ->view('filament.tables.content-mobile-card')
+                    ->hiddenFrom('md')
+                    ->extraCellAttributes(['class' => 'car-mobile-card-cell']),
+
                 Tables\Columns\TextColumn::make('content_name')
                     ->searchable()
                     ->sortable()

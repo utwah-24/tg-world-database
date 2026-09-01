@@ -86,6 +86,12 @@ class PromotionResource extends Resource
         return $table
             ->defaultSort('start_date', 'desc')
             ->columns([
+                Tables\Columns\ViewColumn::make('mobile_card')
+                    ->label('')
+                    ->view('filament.tables.promotion-mobile-card')
+                    ->hiddenFrom('md')
+                    ->extraCellAttributes(['class' => 'car-mobile-card-cell']),
+
                 Tables\Columns\TextColumn::make('promoID')
                     ->label('ID')
                     ->sortable(),

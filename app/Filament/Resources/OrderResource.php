@@ -125,6 +125,12 @@ class OrderResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                Tables\Columns\ViewColumn::make('mobile_card')
+                    ->label('')
+                    ->view('filament.tables.order-mobile-card')
+                    ->hiddenFrom('md')
+                    ->extraCellAttributes(['class' => 'car-mobile-card-cell']),
+
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->sortable(),

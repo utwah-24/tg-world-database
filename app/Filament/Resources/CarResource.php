@@ -427,6 +427,12 @@ class CarResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->persistSortInSession(false)
             ->columns([
+                Tables\Columns\ViewColumn::make('mobile_card')
+                    ->label('')
+                    ->view('filament.tables.car-mobile-card')
+                    ->hiddenFrom('md')
+                    ->extraCellAttributes(['class' => 'car-mobile-card-cell']),
+
                 Tables\Columns\ImageColumn::make('car_pic_urls')
                     ->label('Photos')
                     ->stacked()
