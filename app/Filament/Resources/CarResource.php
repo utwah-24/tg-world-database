@@ -266,7 +266,6 @@ class CarResource extends Resource
                 Forms\Components\Toggle::make('promo_set')
                     ->label('Promotion')
                     ->helperText('Toggle on to link this car to one or more promotions.')
-                    ->live()
                     ->columnSpanFull(),
 
                 Forms\Components\Select::make('promotions')
@@ -298,9 +297,12 @@ class CarResource extends Resource
                     ->searchable()
                     ->native(false)
                     ->live()
-                    ->visible(fn (Get $get): bool => (bool) $get('promo_set'))
                     ->required(fn (Get $get): bool => (bool) $get('promo_set'))
                     ->dehydrated(fn (Get $get): bool => (bool) $get('promo_set'))
+                    ->extraFieldWrapperAttributes([
+                        'x-show' => '$wire.data.promo_set',
+                        'x-cloak' => true,
+                    ])
                     ->helperText('One promo can apply to many cars, and one car can have many promos. Promo price uses the highest discount.')
                     ->columnSpanFull(),
 
@@ -334,7 +336,10 @@ class CarResource extends Resource
                                 : '')
                         );
                     })
-                    ->visible(fn (Get $get): bool => (bool) $get('promo_set'))
+                    ->extraFieldWrapperAttributes([
+                        'x-show' => '$wire.data.promo_set',
+                        'x-cloak' => true,
+                    ])
                     ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('total_available')
@@ -353,7 +358,6 @@ class CarResource extends Resource
                 Forms\Components\Toggle::make('is_coming_soon')
                     ->label('Coming Soon')
                     ->helperText('Enable to mark this car as arriving soon. Status is auto-removed on the arrival date.')
-                    ->live()
                     ->columnSpanFull(),
 
                 Forms\Components\DatePicker::make('arrival_date')
@@ -361,8 +365,12 @@ class CarResource extends Resource
                     ->helperText('The date this car arrives. Coming Soon status is removed automatically on this date.')
                     ->minDate(Carbon::tomorrow())
                     ->native(false)
-                    ->visible(fn (Get $get): bool => (bool) $get('is_coming_soon'))
                     ->required(fn (Get $get): bool => (bool) $get('is_coming_soon'))
+                    ->dehydrated(fn (Get $get): bool => (bool) $get('is_coming_soon'))
+                    ->extraFieldWrapperAttributes([
+                        'x-show' => '$wire.data.is_coming_soon',
+                        'x-cloak' => true,
+                    ])
                     ->columnSpanFull(),
 
                 // ── Existing photos (view + delete) ───────────────────────────
