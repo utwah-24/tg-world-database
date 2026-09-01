@@ -48,7 +48,11 @@ class CreateCar extends CreateRecord
         $data['is_coming_soon'] = ! empty($data['arrival_date']) ? 'set' : null;
         $data['is_sold'] = ! empty($data['is_sold']) ? 'sold' : 'available';
         $data['sold_at'] = $data['is_sold'] === 'sold' ? now() : null;
-        $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
+        $isRegistered = ! empty($data['registration']);
+        $data['registration'] = $isRegistered ? 'registered' : 'unregistered';
+        $data['registration_number'] = $isRegistered
+            ? ($data['registration_number'] ?? null)
+            : null;
         $data['promo_set'] = ! empty($data['promo_set']);
 
         unset($data['promotions']);

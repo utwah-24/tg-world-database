@@ -238,14 +238,17 @@ class CarResource extends Resource
                 Forms\Components\Toggle::make('registration')
                     ->label('Registered')
                     ->helperText('Toggle on if this car is registered, off if unregistered.')
-                    ->live()
                     ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('registration_number')
                     ->label('Registration Number')
                     ->placeholder('e.g. T 123 ABC')
                     ->maxLength(50)
-                    ->visible(fn (Get $get): bool => (bool) $get('registration'))
+                    ->dehydrated(fn (Get $get): bool => (bool) $get('registration'))
+                    ->extraFieldWrapperAttributes([
+                        'x-show' => '$wire.data.registration',
+                        'x-cloak' => true,
+                    ])
                     ->columnSpanFull(),
 
                 Forms\Components\Toggle::make('in_dar')
@@ -306,37 +309,40 @@ class CarResource extends Resource
                     ->helperText('One promo can apply to many cars, and one car can have many promos. Promo price uses the highest discount.')
                     ->columnSpanFull(),
 
-                Forms\Components\Placeholder::make('promo_price_preview')
-                    ->label('Promo Price')
-                    ->content(function (Get $get): HtmlString {
-                        $price = Car::discountedPricePreview(
-                            $get('car_price'),
-                            $get('promotions') ?? [],
-                        );
-
-                        if (! $price) {
-                            return new HtmlString(
-                                '<span style="color:#9ca3af;font-style:italic;">Select a promotion to see the discounted price.</span>'
+                Forms\Components\Group::make([
+                    Forms\Components\Placeholder::make('promo_price_preview')
+                        ->label('Promo Price')
+                        ->content(function (Get $get): HtmlString {
+                            $price = Car::discountedPricePreview(
+                                $get('car_price'),
+                                $get('promotions') ?? [],
                             );
-                        }
 
-                        $ids = collect($get('promotions') ?? [])->filter()->all();
-                        $best = Promotion::query()
-                            ->whereIn('promoID', $ids)
-                            ->orderByDesc('price_reduction')
-                            ->first();
-                        $pct = $best?->price_reduction_label ?? '';
+                            if (! $price) {
+                                return new HtmlString(
+                                    '<span style="color:#9ca3af;font-style:italic;">Select a promotion to see the discounted price.</span>'
+                                );
+                            }
 
-                        return new HtmlString(
-                            '<span style="font-size:1.05rem;font-weight:600;color:#059669;">'
-                            .e($price)
-                            .'</span>'
-                            .($pct !== ''
-                                ? ' <span style="color:#6b7280;font-size:0.875rem;">('.$pct.' off)</span>'
-                                : '')
-                        );
-                    })
-                    ->extraFieldWrapperAttributes([
+                            $ids = collect($get('promotions') ?? [])->filter()->all();
+                            $best = Promotion::query()
+                                ->whereIn('promoID', $ids)
+                                ->orderByDesc('price_reduction')
+                                ->first();
+                            $pct = $best?->price_reduction_label ?? '';
+
+                            return new HtmlString(
+                                '<span style="font-size:1.05rem;font-weight:600;color:#059669;">'
+                                .e($price)
+                                .'</span>'
+                                .($pct !== ''
+                                    ? ' <span style="color:#6b7280;font-size:0.875rem;">('.$pct.' off)</span>'
+                                    : '')
+                            );
+                        })
+                        ->columnSpanFull(),
+                ])
+                    ->extraAttributes([
                         'x-show' => '$wire.data.promo_set',
                         'x-cloak' => true,
                     ])

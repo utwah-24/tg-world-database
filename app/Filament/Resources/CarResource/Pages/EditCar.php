@@ -129,7 +129,11 @@ class EditCar extends EditRecord
             $data['sold_at'] = null;
         }
 
-        $data['registration'] = ! empty($data['registration']) ? 'registered' : 'unregistered';
+        $isRegistered = ! empty($data['registration']);
+        $data['registration'] = $isRegistered ? 'registered' : 'unregistered';
+        $data['registration_number'] = $isRegistered
+            ? ($data['registration_number'] ?? null)
+            : null;
         $data['promo_set'] = ! empty($data['promo_set']);
 
         // Relationship sync is handled by Filament Select::relationship().
