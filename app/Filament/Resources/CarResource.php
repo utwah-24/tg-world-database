@@ -296,7 +296,6 @@ class CarResource extends Resource
                         fn (Promotion $record): string => $record->promo_name.' ('.$record->price_reduction_label.')'
                     )
                     ->searchable()
-                    ->preload()
                     ->native(false)
                     ->live()
                     ->visible(fn (Get $get): bool => (bool) $get('promo_set'))
