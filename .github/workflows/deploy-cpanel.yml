@@ -33,7 +33,7 @@ jobs:
           protocol: ftps
           timeout: 600000
           log-level: verbose
-          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
             **/.git*
             **/.github/**
