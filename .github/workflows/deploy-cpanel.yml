@@ -103,7 +103,26 @@ jobs:
               env_file.write(f'FTP_LARAVEL_DIR={live_dir}\n')
           PY
 
-      - name: Deploy via FTP
+      - name: Prepare mobile card release
+        run: |
+          mkdir -p \
+            .deploy-release/app/Filament/Resources \
+            .deploy-release/app/Providers/Filament \
+            .deploy-release/resources/views/filament/hooks \
+            .deploy-release/resources/views/filament/tables
+
+          cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/ContentResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/OrderResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/PromotionResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/SoldCarResource.php .deploy-release/app/Filament/Resources/
+          cp app/Providers/Filament/AdminPanelProvider.php .deploy-release/app/Providers/Filament/
+          cp resources/views/filament/hooks/car-mobile-cards-styles.blade.php \
+            .deploy-release/resources/views/filament/hooks/
+          cp resources/views/filament/tables/*-mobile-card.blade.php \
+            .deploy-release/resources/views/filament/tables/
+
+      - name: Deploy mobile card release via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -113,29 +132,9 @@ jobs:
           protocol: ftps
           timeout: 600000
           log-level: verbose
+          local-dir: .deploy-release/
           server-dir: ${{ env.FTP_LARAVEL_DIR }}
-          exclude: |
-            .git/**
-            .git*
-            .github/**
-            .github*
-            .ftp-deploy-sync-state.json
-            **/.git*
-            **/.github/**
-            **/.ftp-deploy-sync-state.json
-            **/node_modules/**
-            **/vendor/**
-            **/tests/**
-            **/.env
-            **/.env.*
-            **/storage/logs/**
-            **/storage/framework/cache/data/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
-            **/public/TGworld/**
-            **/README.md
-            **/phpunit.xml
-            **/.editorconfig
+          state-name: .ftp-mobile-cards-state.json
 
       - name: Prepare live cache clearer
         run: |
