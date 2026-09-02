@@ -204,6 +204,6 @@ jobs:
       - name: Clear live Laravel and Filament caches
         run: |
           response="$(curl --silent --show-error --fail --retry 3 --retry-delay 2 \
-            "https://tgworld.e-saloon.online/deploy-cache-clear.php?token=$CACHE_CLEAR_TOKEN")"
+            "https://tgworld.e-saloon.online/public/deploy-cache-clear.php?token=$CACHE_CLEAR_TOKEN")"
 
           test "$response" = 'CACHE_CLEAR_OK'
