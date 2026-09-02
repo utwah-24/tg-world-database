@@ -35,8 +35,14 @@ jobs:
           log-level: verbose
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
+            .git/**
+            .git*
+            .github/**
+            .github*
+            .ftp-deploy-sync-state.json
             **/.git*
             **/.github/**
+            **/.ftp-deploy-sync-state.json
             **/node_modules/**
             **/vendor/**
             **/tests/**
@@ -59,7 +65,7 @@ jobs:
 
           mkdir -p .deploy-cache-clear
 
-          cat > .deploy-cache-clear/.deploy-cache-clear.php <<'PHP'
+          cat > .deploy-cache-clear/deploy-cache-clear.php <<'PHP'
           <?php
 
           declare(strict_types=1);
@@ -95,7 +101,7 @@ jobs:
           PHP
 
           CACHE_CLEAR_TOKEN="$cache_token" php -r '
-              $path = ".deploy-cache-clear/.deploy-cache-clear.php";
+              $path = ".deploy-cache-clear/deploy-cache-clear.php";
               $contents = file_get_contents($path);
               file_put_contents($path, str_replace("__CACHE_TOKEN__", getenv("CACHE_CLEAR_TOKEN"), $contents));
           '
@@ -117,6 +123,6 @@ jobs:
       - name: Clear live Laravel and Filament caches
         run: |
           response="$(curl --silent --show-error --fail --retry 3 --retry-delay 2 \
-            "https://tgworld.e-saloon.online/.deploy-cache-clear.php?token=$CACHE_CLEAR_TOKEN")"
+            "https://tgworld.e-saloon.online/deploy-cache-clear.php?token=$CACHE_CLEAR_TOKEN")"
 
           test "$response" = 'CACHE_CLEAR_OK'
