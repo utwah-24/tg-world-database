@@ -51,26 +51,26 @@ jobs:
             **/phpunit.xml
             **/.editorconfig
 
-      - name: Clear live Laravel and Filament caches
-        env:
-          FTP_HOST: ${{ secrets.FTP_SERVER }}
-          FTP_PORT: ${{ secrets.FTPS_PORT }}
-          FTP_USER: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_REMOTE_DIR: ${{ secrets.FTP_SERVER_DIR }}
+      - name: Prepare live cache clearer
         run: |
-          cache_file="deploy-cache-clear-$(openssl rand -hex 24).php"
-          cache_script="$(mktemp)"
-          trap 'rm -f "$cache_script"' EXIT
+          cache_token="$(openssl rand -hex 32)"
+          echo "::add-mask::$cache_token"
+          echo "CACHE_CLEAR_TOKEN=$cache_token" >> "$GITHUB_ENV"
 
-          echo "::add-mask::$cache_file"
+          mkdir -p .deploy-cache-clear
 
-          cat > "$cache_script" <<'PHP'
+          cat > .deploy-cache-clear/.deploy-cache-clear.php <<'PHP'
           <?php
 
           declare(strict_types=1);
 
           header('Content-Type: text/plain; charset=UTF-8');
+
+          if (! hash_equals('__CACHE_TOKEN__', (string) ($_GET['token'] ?? ''))) {
+              http_response_code(404);
+              echo 'NOT_FOUND';
+              exit;
+          }
 
           register_shutdown_function(static function (): void {
               @unlink(__FILE__);
@@ -94,17 +94,29 @@ jobs:
           echo 'CACHE_CLEAR_OK';
           PHP
 
-          remote_dir="${FTP_REMOTE_DIR#/}"
-          remote_dir="${remote_dir%/}"
+          CACHE_CLEAR_TOKEN="$cache_token" php -r '
+              $path = ".deploy-cache-clear/.deploy-cache-clear.php";
+              $contents = file_get_contents($path);
+              file_put_contents($path, str_replace("__CACHE_TOKEN__", getenv("CACHE_CLEAR_TOKEN"), $contents));
+          '
 
-          curl --silent --show-error --fail \
-            --ssl-reqd \
-            --ftp-pasv \
-            --user "$FTP_USER:$FTP_PASSWORD" \
-            --upload-file "$cache_script" \
-            "ftp://$FTP_HOST:$FTP_PORT/$remote_dir/public/$cache_file"
+      - name: Upload live cache clearer
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTPS_PORT }}
+          protocol: ftps
+          timeout: 600000
+          log-level: minimal
+          local-dir: .deploy-cache-clear/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}/public/
+          state-name: .ftp-cache-clear-state.json
 
+      - name: Clear live Laravel and Filament caches
+        run: |
           response="$(curl --silent --show-error --fail --retry 3 --retry-delay 2 \
-            "https://tgworld.e-saloon.online/$cache_file")"
+            "https://tgworld.e-saloon.online/.deploy-cache-clear.php?token=$CACHE_CLEAR_TOKEN")"
 
           test "$response" = 'CACHE_CLEAR_OK'
