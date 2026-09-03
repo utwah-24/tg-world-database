@@ -202,3 +202,35 @@ jobs:
             'https://tgworld.e-saloon.online/api/auth/me')"
           test "$status" = '401'
           grep -q 'UNAUTHENTICATED' /tmp/auth-me.json
+
+      - name: Prepare production auth inspector
+        run: |
+          inspect_token="$(openssl rand -hex 32)"
+          echo "::add-mask::$inspect_token"
+          echo "AUTH_INSPECT_TOKEN=$inspect_token" >> "$GITHUB_ENV"
+          mkdir -p .auth-inspector
+          cp .github/deploy/inspect-auth.php .auth-inspector/inspect-auth.php
+          AUTH_INSPECT_TOKEN="$inspect_token" php -r '
+              $path = ".auth-inspector/inspect-auth.php";
+              $contents = file_get_contents($path);
+              file_put_contents($path, str_replace("__DEPLOY_TOKEN__", getenv("AUTH_INSPECT_TOKEN"), $contents));
+          '
+
+      - name: Upload production auth inspector
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTPS_PORT }}
+          protocol: ftps
+          timeout: 600000
+          log-level: minimal
+          local-dir: .auth-inspector/
+          server-dir: ${{ env.FTP_LARAVEL_DIR }}public/
+          state-name: .ftp-auth-inspector-state.json
+
+      - name: Inspect production authentication database
+        run: |
+          curl --silent --show-error --fail \
+            "https://tgworld.e-saloon.online/public/inspect-auth.php?token=$AUTH_INSPECT_TOKEN"
