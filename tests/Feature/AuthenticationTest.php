@@ -85,12 +85,48 @@ class AuthenticationTest extends TestCase
         $this->call('GET', '/api/auth/me', cookies: ['tgworld_session' => $token], server: ['HTTP_ACCEPT' => 'application/json'])->assertUnauthorized()->assertJsonPath('error.code', 'UNAUTHENTICATED');
     }
 
-    public function test_invalid_credentials_are_generic_and_duplicates_are_rejected(): void
+    public function test_two_genuinely_unique_users_can_register(): void
+    {
+        $this->postJson('/api/auth/register', $this->registration)->assertCreated();
+        $this->postJson('/api/auth/register', [
+            'username' => 'john.smith',
+            'email' => 'john@example.com',
+            'phone' => '+255711222333',
+            'password' => 'another secure passphrase',
+        ])->assertCreated()->assertJsonPath('user.email', 'john@example.com');
+
+        $this->assertDatabaseCount('users', 2);
+    }
+
+    public function test_invalid_credentials_are_generic_and_duplicates_are_field_specific(): void
     {
         $this->postJson('/api/auth/register', $this->registration)->assertCreated();
         $this->postJson('/api/auth/login', ['usernameOrEmail' => 'missing', 'password' => 'wrong password'])->assertUnauthorized()->assertJsonPath('error.code', 'INVALID_CREDENTIALS');
         $this->postJson('/api/auth/login', ['usernameOrEmail' => 'Jane.Doe', 'password' => 'wrong password'])->assertUnauthorized()->assertJsonPath('error.code', 'INVALID_CREDENTIALS');
-        $this->postJson('/api/auth/register', array_merge($this->registration, ['username' => 'jane.doe']))->assertUnprocessable()->assertJsonPath('error.code', 'VALIDATION_FAILED');
+        $this->postJson('/api/auth/register', array_merge($this->registration, [
+            'username' => 'jane.doe',
+            'email' => 'other@example.com',
+            'phone' => '+255711222333',
+        ]))
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'ACCOUNT_EXISTS')
+            ->assertJsonPath('error.fields.username.0', 'This username is already in use.')
+            ->assertJsonMissingPath('error.fields.email')
+            ->assertJsonMissingPath('error.fields.phone');
+
+        $this->postJson('/api/auth/register', array_merge($this->registration, [
+            'username' => 'other-user',
+            'phone' => '+255711222333',
+        ]))
+            ->assertConflict()
+            ->assertJsonPath('error.fields.email.0', 'This email is already in use.');
+
+        $this->postJson('/api/auth/register', array_merge($this->registration, [
+            'username' => 'another-user',
+            'email' => 'another@example.com',
+        ]))
+            ->assertConflict()
+            ->assertJsonPath('error.fields.phone.0', 'This phone number is already in use.');
     }
 
     public function test_expired_and_revoked_sessions_are_rejected(): void

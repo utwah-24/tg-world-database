@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -37,17 +36,18 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email:rfc', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
             'password' => ['required', 'string', 'min:10', 'max:255'],
-            'normalized_username' => ['required', Rule::unique('users')],
-            'normalized_email' => ['required', Rule::unique('users')],
-            'normalized_phone' => ['required', 'regex:/^\+[1-9]\d{7,14}$/', Rule::unique('users')],
+            'normalized_username' => ['required'],
+            'normalized_email' => ['required'],
+            'normalized_phone' => ['required', 'regex:/^\+[1-9]\d{7,14}$/'],
         ], [
-            'normalized_username.unique' => 'This username is already in use.',
-            'normalized_email.unique' => 'This email is already in use.',
-            'normalized_phone.unique' => 'This phone number is already in use.',
             'normalized_phone.regex' => 'Enter a valid international phone number.',
         ]);
         if ($validator->fails()) {
             return $this->validationError($validator->errors()->toArray());
+        }
+
+        if ($conflicts = $this->accountConflicts($input)) {
+            return $this->accountExists($conflicts);
         }
 
         try {
@@ -57,8 +57,22 @@ class AuthController extends Controller
                 'phone_number' => $input['normalized_phone'], 'normalized_phone' => $input['normalized_phone'],
                 'password' => $input['password'], 'role' => 'customer',
             ]));
-        } catch (QueryException) {
-            return $this->error('ACCOUNT_EXISTS', 'An account with these details already exists.', 409);
+        } catch (QueryException $exception) {
+            // A uniqueness race may occur after the preflight query. Confirm an
+            // actual normalized match before classifying the error as a conflict.
+            if ($conflicts = $this->accountConflicts($input)) {
+                return $this->accountExists($conflicts);
+            }
+
+            Log::error('Customer registration database failure', [
+                'sql_state' => $exception->errorInfo[0] ?? null,
+                'driver_code' => $exception->errorInfo[1] ?? null,
+                'exception' => $exception::class,
+                'database_message' => $exception->getPrevious()?->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+
+            return $this->error('REGISTRATION_FAILED', 'The account could not be created. Please try again.', 500);
         }
         [$token, $expiresAt] = $this->sessions->create($user, $request);
         Log::info('Customer registered', ['user_id' => $user->id, 'ip' => $request->ip()]);
@@ -186,6 +200,35 @@ class AuthController extends Controller
     private function safeUser(Client $user): array
     {
         return ['id' => $user->id, 'username' => $user->username, 'email' => $user->email, 'phone' => $user->phone_number, 'role' => $user->role, 'createdAt' => $user->created_at?->toISOString()];
+    }
+
+    private function accountConflicts(array $input): array
+    {
+        $matches = Client::query()
+            ->where(function ($query) use ($input): void {
+                $query->where('normalized_username', $input['normalized_username'])
+                    ->orWhere('normalized_email', $input['normalized_email'])
+                    ->orWhere('normalized_phone', $input['normalized_phone']);
+            })
+            ->get(['normalized_username', 'normalized_email', 'normalized_phone']);
+
+        $fields = [];
+        if ($matches->contains('normalized_username', $input['normalized_username'])) {
+            $fields['username'] = ['This username is already in use.'];
+        }
+        if ($matches->contains('normalized_email', $input['normalized_email'])) {
+            $fields['email'] = ['This email is already in use.'];
+        }
+        if ($matches->contains('normalized_phone', $input['normalized_phone'])) {
+            $fields['phone'] = ['This phone number is already in use.'];
+        }
+
+        return $fields;
+    }
+
+    private function accountExists(array $fields): JsonResponse
+    {
+        return $this->error('ACCOUNT_EXISTS', 'An account with one or more of these details already exists.', 409, $fields);
     }
 
     private function rejectUnexpected(Request $request, array $allowed): ?JsonResponse
