@@ -23,7 +23,8 @@ $kernel->bootstrap();
 
 if ($kernel->call('migrate', ['--force' => true]) !== 0) {
     http_response_code(500);
-    echo 'MIGRATION_FAILED';
+    echo "MIGRATION_FAILED\n";
+    echo substr($kernel->output(), -4000);
     exit;
 }
 

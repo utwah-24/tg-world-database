@@ -190,8 +190,9 @@ jobs:
 
       - name: Run database migrations
         run: |
-          response="$(curl --silent --show-error --fail \
+          response="$(curl --silent --show-error \
             "https://tgworld.e-saloon.online/public/run-release.php?token=$DEPLOY_RUNNER_TOKEN")"
+          echo "$response"
           test "$response" = 'RELEASE_OK'
 
       - name: Verify authentication route
