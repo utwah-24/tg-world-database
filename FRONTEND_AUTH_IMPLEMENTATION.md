@@ -125,7 +125,11 @@ export const authApi = {
   },
 
   logout() {
-    return authRequest<void>("/logout", { method: "POST" });
+    // This host's LiteSpeed rules reject bodyless POST requests.
+    return authRequest<void>("/logout", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
   },
 
   forgotPassword(email: string) {
