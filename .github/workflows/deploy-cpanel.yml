@@ -103,14 +103,39 @@ jobs:
               env_file.write(f'FTP_LARAVEL_DIR={live_dir}\n')
           PY
 
-      - name: Prepare mobile card release
+      - name: Prepare application release
         run: |
           mkdir -p \
+            .deploy-release/app/Http/Controllers/Api \
+            .deploy-release/app/Http/Middleware \
+            .deploy-release/app/Mail \
+            .deploy-release/app/Models \
+            .deploy-release/app/Services \
             .deploy-release/app/Filament/Resources \
             .deploy-release/app/Providers/Filament \
+            .deploy-release/app/Providers \
+            .deploy-release/bootstrap \
+            .deploy-release/config \
+            .deploy-release/database/migrations \
+            .deploy-release/resources/views/emails \
             .deploy-release/resources/views/filament/hooks \
-            .deploy-release/resources/views/filament/tables
+            .deploy-release/resources/views/filament/tables \
+            .deploy-release/routes
 
+          cp app/Http/Controllers/Api/AuthController.php .deploy-release/app/Http/Controllers/Api/
+          cp app/Http/Middleware/AuthenticateCustomerSession.php .deploy-release/app/Http/Middleware/
+          cp app/Http/Middleware/VerifyFrontendOrigin.php .deploy-release/app/Http/Middleware/
+          cp app/Mail/PasswordResetMail.php .deploy-release/app/Mail/
+          cp app/Models/AuthSession.php .deploy-release/app/Models/
+          cp app/Models/Client.php .deploy-release/app/Models/
+          cp app/Models/PasswordResetToken.php .deploy-release/app/Models/
+          cp app/Services/AuthSessionService.php .deploy-release/app/Services/
+          cp app/Providers/AppServiceProvider.php .deploy-release/app/Providers/
+          cp bootstrap/app.php .deploy-release/bootstrap/
+          cp config/app.php config/auth.php config/cors.php config/session.php .deploy-release/config/
+          cp database/migrations/2026_09_03_000001_create_customer_auth_tables.php .deploy-release/database/migrations/
+          cp resources/views/emails/password-reset.blade.php .deploy-release/resources/views/emails/
+          cp routes/api.php .deploy-release/routes/
           cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/
           cp app/Filament/Resources/ContentResource.php .deploy-release/app/Filament/Resources/
           cp app/Filament/Resources/OrderResource.php .deploy-release/app/Filament/Resources/
@@ -122,7 +147,7 @@ jobs:
           cp resources/views/filament/tables/*-mobile-card.blade.php \
             .deploy-release/resources/views/filament/tables/
 
-      - name: Deploy mobile card release via FTP
+      - name: Deploy application release via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -135,3 +160,44 @@ jobs:
           local-dir: .deploy-release/
           server-dir: ${{ env.FTP_LARAVEL_DIR }}
           state-name: .ftp-mobile-cards-state.json
+
+      - name: Prepare one-time deployment runner
+        run: |
+          deploy_token="$(openssl rand -hex 32)"
+          echo "::add-mask::$deploy_token"
+          echo "DEPLOY_RUNNER_TOKEN=$deploy_token" >> "$GITHUB_ENV"
+          mkdir -p .deploy-runner
+          cp .github/deploy/run-release.php .deploy-runner/run-release.php
+          DEPLOY_RUNNER_TOKEN="$deploy_token" php -r '
+              $path = ".deploy-runner/run-release.php";
+              $contents = file_get_contents($path);
+              file_put_contents($path, str_replace("__DEPLOY_TOKEN__", getenv("DEPLOY_RUNNER_TOKEN"), $contents));
+          '
+
+      - name: Upload one-time deployment runner
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTPS_PORT }}
+          protocol: ftps
+          timeout: 600000
+          log-level: minimal
+          local-dir: .deploy-runner/
+          server-dir: ${{ env.FTP_LARAVEL_DIR }}public/
+          state-name: .ftp-release-runner-state.json
+
+      - name: Run migrations and clear caches
+        run: |
+          response="$(curl --silent --show-error --fail \
+            "https://tgworld.e-saloon.online/public/run-release.php?token=$DEPLOY_RUNNER_TOKEN")"
+          test "$response" = 'RELEASE_OK'
+
+      - name: Verify authentication route
+        run: |
+          status="$(curl --silent --output /tmp/auth-me.json --write-out '%{http_code}' \
+            -H 'Accept: application/json' \
+            'https://tgworld.e-saloon.online/api/auth/me')"
+          test "$status" = '401'
+          grep -q 'UNAUTHENTICATED' /tmp/auth-me.json
