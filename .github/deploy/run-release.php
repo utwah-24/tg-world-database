@@ -15,13 +15,21 @@ register_shutdown_function(static function (): void {
     @unlink(__DIR__.'/.ftp-release-runner-state.json');
 });
 
-require dirname(__DIR__).'/vendor/autoload.php';
+try {
+    require dirname(__DIR__).'/vendor/autoload.php';
 
-$app = require dirname(__DIR__).'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+    $app = require dirname(__DIR__).'/bootstrap/app.php';
+    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
+    $exitCode = $kernel->call('migrate', ['--force' => true]);
+} catch (Throwable $exception) {
+    http_response_code(500);
+    echo "MIGRATION_FAILED\n";
+    echo get_class($exception).': '.$exception->getMessage();
+    exit;
+}
 
-if ($kernel->call('migrate', ['--force' => true]) !== 0) {
+if ($exitCode !== 0) {
     http_response_code(500);
     echo "MIGRATION_FAILED\n";
     echo substr($kernel->output(), -4000);
