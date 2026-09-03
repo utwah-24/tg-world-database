@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\NewQuotationMail;
 use App\Models\Car;
 use App\Models\Quotation;
 use App\Models\QuotationAudit;
@@ -134,12 +135,13 @@ class QuotationController extends Controller
         }
 
         try {
+            Mail::to((string) config('mail.quotation_notifications_to'))->send(new NewQuotationMail($quotation));
             Mail::raw(
                 "We received quotation {$quotation->reference}. You can track it in your TG World profile.",
                 fn ($message) => $message->to($quotation->email)->subject("Quotation {$quotation->reference} received"),
             );
         } catch (\Throwable $exception) {
-            Log::error('Quotation received email failed', ['quotation_id' => $quotation->id, 'exception' => $exception::class, 'message' => $exception->getMessage()]);
+            Log::error('Quotation notification email failed', ['quotation_id' => $quotation->id, 'exception' => $exception::class, 'message' => $exception->getMessage()]);
         }
 
         return response()->json(['quotation' => $this->resource($quotation)], 201);

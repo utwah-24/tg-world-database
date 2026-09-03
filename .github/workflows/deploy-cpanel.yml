@@ -130,6 +130,7 @@ jobs:
           cp app/Http/Middleware/AuthenticateCustomerSession.php .deploy-release/app/Http/Middleware/
           cp app/Http/Middleware/VerifyFrontendOrigin.php .deploy-release/app/Http/Middleware/
           cp app/Mail/PasswordResetMail.php .deploy-release/app/Mail/
+          cp app/Mail/NewQuotationMail.php .deploy-release/app/Mail/
           cp app/Models/AuthSession.php .deploy-release/app/Models/
           cp app/Models/Client.php .deploy-release/app/Models/
           cp app/Models/Car.php .deploy-release/app/Models/
@@ -148,6 +149,7 @@ jobs:
           cp database/migrations/2026_09_03_000003_create_user_favorites_table.php .deploy-release/database/migrations/
           cp database/migrations/2026_09_03_000004_create_quotations_tables.php .deploy-release/database/migrations/
           cp resources/views/emails/password-reset.blade.php .deploy-release/resources/views/emails/
+          cp resources/views/emails/new-quotation.blade.php .deploy-release/resources/views/emails/
           cp routes/api.php .deploy-release/routes/
           cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/
           cp app/Filament/Resources/QuotationResource.php .deploy-release/app/Filament/Resources/

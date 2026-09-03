@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\NewQuotationMail;
 use App\Models\AuthSession;
 use App\Models\Client;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,6 +18,7 @@ class QuotationsTest extends TestCase
     {
         parent::setUp();
         Mail::fake();
+        config(['mail.quotation_notifications_to' => 'dashboard@example.com']);
         Storage::fake('local');
 
         Schema::create('users', function (Blueprint $table) {
@@ -119,6 +121,16 @@ class QuotationsTest extends TestCase
         $this->assertDatabaseHas('quotations', ['id' => $id, 'customer_id' => $user->id, 'car_id' => $carId, 'phone' => '+255700000000']);
         $this->assertDatabaseHas('quotation_audits', ['quotation_id' => $id, 'action' => 'created']);
         Storage::disk('local')->assertExists("quotations/{$reference}.pdf");
+        Mail::assertSent(NewQuotationMail::class, function (NewQuotationMail $mail) use ($id): bool {
+            $html = $mail->render();
+
+            return $mail->hasTo('dashboard@example.com')
+                && $mail->quotation->id === $id
+                && str_contains($html, 'TG World International')
+                && str_contains($html, 'Toyota Land Cruiser')
+                && str_contains($html, '350,000,000')
+                && ! str_contains($html, 'TGworld/SUV/car.jpg');
+        });
 
         $pdf = $this->jsonRequest('GET', "/api/quotations/{$id}/preview", $token)->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-1.4', $pdf->streamedContent());
