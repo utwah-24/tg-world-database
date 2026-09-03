@@ -2,6 +2,8 @@
 
 return [
 
+    'frontend_url' => env('FRONTEND_URL', 'https://tgworld.netlify.app'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Name

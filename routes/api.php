@@ -11,8 +11,16 @@ use App\Http\Controllers\Api\SoldCarController;
 use App\Http\Controllers\Api\TestDriveController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/auth/register', [AuthController::class, 'register']);
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::prefix('auth')->middleware('frontend.origin')->group(function () {
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth-register');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth-recovery');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth-recovery');
+    Route::middleware('customer.auth')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+    });
+});
 
 Route::get('/cars', [CarController::class, 'index']);
 Route::get('/cars/{carId}', [CarController::class, 'show'])->whereNumber('carId');

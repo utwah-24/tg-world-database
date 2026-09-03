@@ -2,6 +2,10 @@
 
 return [
 
+    'customer_session_lifetime' => (int) env('AUTH_SESSION_LIFETIME', 10080),
+
+    'password_reset_expire' => (int) env('AUTH_PASSWORD_RESET_EXPIRE', 30),
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults
