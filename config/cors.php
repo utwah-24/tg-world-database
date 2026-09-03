@@ -8,6 +8,8 @@ return [
 
     'allowed_origins' => [
         'https://tgworld.netlify.app',
+        'https://tgworldtz.com',
+        'https://www.tgworldtz.com',
         env('FRONTEND_URL', 'https://tgworld.netlify.app'),
         env('FRONTEND_LOCAL_URL', 'http://localhost:3000'),
     ],

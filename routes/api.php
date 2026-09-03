@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\LogoController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PromotionController;
+use App\Http\Controllers\Api\QuotationController;
 use App\Http\Controllers\Api\SoldCarController;
 use App\Http\Controllers\Api\TestDriveController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,14 @@ Route::prefix('favorites')->middleware(['frontend.origin', 'customer.auth'])->gr
     Route::post('/', [FavoriteController::class, 'store'])->middleware('throttle:favorites-mutate');
     Route::delete('/{carId}', [FavoriteController::class, 'destroy'])->middleware('throttle:favorites-mutate');
     Route::post('/{carId}/remove', [FavoriteController::class, 'destroy'])->middleware('throttle:favorites-mutate');
+});
+
+Route::prefix('quotations')->middleware(['frontend.origin', 'customer.auth'])->group(function () {
+    Route::get('/', [QuotationController::class, 'index'])->middleware('throttle:quotations-list');
+    Route::post('/', [QuotationController::class, 'store'])->middleware('throttle:quotations-create');
+    Route::get('/{id}', [QuotationController::class, 'show'])->middleware('throttle:quotations-list');
+    Route::get('/{id}/preview', [QuotationController::class, 'preview'])->middleware('throttle:quotations-list');
+    Route::post('/{id}/withdraw', [QuotationController::class, 'withdraw'])->middleware('throttle:quotations-mutate');
 });
 
 Route::get('/cars', [CarController::class, 'index']);

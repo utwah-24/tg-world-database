@@ -110,8 +110,10 @@ jobs:
             .deploy-release/app/Http/Middleware \
             .deploy-release/app/Mail \
             .deploy-release/app/Models \
+            .deploy-release/app/Observers \
             .deploy-release/app/Services \
             .deploy-release/app/Filament/Resources \
+            .deploy-release/app/Filament/Resources/QuotationResource/Pages \
             .deploy-release/app/Providers/Filament \
             .deploy-release/app/Providers \
             .deploy-release/bootstrap \
@@ -124,6 +126,7 @@ jobs:
 
           cp app/Http/Controllers/Api/AuthController.php .deploy-release/app/Http/Controllers/Api/
           cp app/Http/Controllers/Api/FavoriteController.php .deploy-release/app/Http/Controllers/Api/
+          cp app/Http/Controllers/Api/QuotationController.php .deploy-release/app/Http/Controllers/Api/
           cp app/Http/Middleware/AuthenticateCustomerSession.php .deploy-release/app/Http/Middleware/
           cp app/Http/Middleware/VerifyFrontendOrigin.php .deploy-release/app/Http/Middleware/
           cp app/Mail/PasswordResetMail.php .deploy-release/app/Mail/
@@ -131,17 +134,24 @@ jobs:
           cp app/Models/Client.php .deploy-release/app/Models/
           cp app/Models/Car.php .deploy-release/app/Models/
           cp app/Models/UserFavorite.php .deploy-release/app/Models/
+          cp app/Models/Quotation.php .deploy-release/app/Models/
+          cp app/Models/QuotationAudit.php .deploy-release/app/Models/
           cp app/Models/PasswordResetToken.php .deploy-release/app/Models/
           cp app/Services/AuthSessionService.php .deploy-release/app/Services/
+          cp app/Services/QuotationPdfService.php .deploy-release/app/Services/
+          cp app/Observers/QuotationObserver.php .deploy-release/app/Observers/
           cp app/Providers/AppServiceProvider.php .deploy-release/app/Providers/
           cp bootstrap/app.php .deploy-release/bootstrap/
           cp config/app.php config/auth.php config/cors.php config/session.php .deploy-release/config/
           cp database/migrations/2026_09_03_000001_create_customer_auth_tables.php .deploy-release/database/migrations/
           cp database/migrations/2026_09_03_000002_repair_production_users_schema.php .deploy-release/database/migrations/
           cp database/migrations/2026_09_03_000003_create_user_favorites_table.php .deploy-release/database/migrations/
+          cp database/migrations/2026_09_03_000004_create_quotations_tables.php .deploy-release/database/migrations/
           cp resources/views/emails/password-reset.blade.php .deploy-release/resources/views/emails/
           cp routes/api.php .deploy-release/routes/
           cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/QuotationResource.php .deploy-release/app/Filament/Resources/
+          cp app/Filament/Resources/QuotationResource/Pages/ListQuotations.php .deploy-release/app/Filament/Resources/QuotationResource/Pages/
           cp app/Filament/Resources/ContentResource.php .deploy-release/app/Filament/Resources/
           cp app/Filament/Resources/OrderResource.php .deploy-release/app/Filament/Resources/
           cp app/Filament/Resources/PromotionResource.php .deploy-release/app/Filament/Resources/
@@ -212,3 +222,8 @@ jobs:
             'https://tgworld.e-saloon.online/api/favorites')"
           test "$status" = '401'
           grep -q 'UNAUTHENTICATED' /tmp/favorites.json
+          status="$(curl --silent --output /tmp/quotations.json --write-out '%{http_code}' \
+            -H 'Accept: application/json' \
+            'https://tgworld.e-saloon.online/api/quotations')"
+          test "$status" = '401'
+          grep -q 'UNAUTHENTICATED' /tmp/quotations.json

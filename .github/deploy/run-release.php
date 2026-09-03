@@ -21,6 +21,8 @@ try {
     $app = require dirname(__DIR__).'/bootstrap/app.php';
     $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
+    $kernel->call('config:clear');
+    $kernel->call('route:clear');
     $exitCode = $kernel->call('migrate', ['--force' => true]);
 } catch (Throwable $exception) {
     http_response_code(500);

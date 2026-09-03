@@ -67,6 +67,11 @@ class Car extends Model
         return $this->hasMany(UserFavorite::class, 'car_id', 'car_id');
     }
 
+    public function quotations(): HasMany
+    {
+        return $this->hasMany(Quotation::class, 'car_id', 'car_id');
+    }
+
     public function promotions(): BelongsToMany
     {
         return $this->belongsToMany(

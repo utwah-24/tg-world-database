@@ -44,4 +44,9 @@ class Client extends Authenticatable
     {
         return $this->hasMany(UserFavorite::class, 'user_id');
     }
+
+    public function quotations(): HasMany
+    {
+        return $this->hasMany(Quotation::class, 'customer_id');
+    }
 }

@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\AuthSession;
 use App\Models\Order;
+use App\Models\Quotation;
 use App\Models\TestDrive;
 use App\Observers\OrderObserver;
+use App\Observers\QuotationObserver;
 use App\Observers\TestDriveObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -28,19 +30,32 @@ class AppServiceProvider extends ServiceProvider
             Limit::perHour(3)->by('recovery-id:'.hash('sha256', mb_strtolower((string) ($request->input('email') ?: $request->input('token'))))),
         ]);
         RateLimiter::for('favorites-list', fn (Request $request) => [
-            Limit::perMinute(120)->by('favorites-list-user:'.$this->favoriteActorKey($request)),
+            Limit::perMinute(120)->by('favorites-list-user:'.$this->customerActorKey($request)),
             Limit::perMinute(120)->by('favorites-list-ip:'.$request->ip()),
         ]);
         RateLimiter::for('favorites-mutate', fn (Request $request) => [
-            Limit::perMinute(60)->by('favorites-mutate-user:'.$this->favoriteActorKey($request)),
+            Limit::perMinute(60)->by('favorites-mutate-user:'.$this->customerActorKey($request)),
             Limit::perMinute(60)->by('favorites-mutate-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('quotations-list', fn (Request $request) => [
+            Limit::perMinute(120)->by('quotations-list-user:'.$this->customerActorKey($request)),
+            Limit::perMinute(120)->by('quotations-list-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('quotations-create', fn (Request $request) => [
+            Limit::perMinute(10)->by('quotations-create-user:'.$this->customerActorKey($request)),
+            Limit::perMinute(20)->by('quotations-create-ip:'.$request->ip()),
+        ]);
+        RateLimiter::for('quotations-mutate', fn (Request $request) => [
+            Limit::perMinute(30)->by('quotations-mutate-user:'.$this->customerActorKey($request)),
+            Limit::perMinute(60)->by('quotations-mutate-ip:'.$request->ip()),
         ]);
 
         Order::observe(OrderObserver::class);
+        Quotation::observe(QuotationObserver::class);
         TestDrive::observe(TestDriveObserver::class);
     }
 
-    private function favoriteActorKey(Request $request): string
+    private function customerActorKey(Request $request): string
     {
         if ($request->user()) {
             return (string) $request->user()->getAuthIdentifier();
