@@ -134,6 +134,7 @@ jobs:
           cp bootstrap/app.php .deploy-release/bootstrap/
           cp config/app.php config/auth.php config/cors.php config/session.php .deploy-release/config/
           cp database/migrations/2026_09_03_000001_create_customer_auth_tables.php .deploy-release/database/migrations/
+          cp database/migrations/2026_09_03_000002_repair_production_users_schema.php .deploy-release/database/migrations/
           cp resources/views/emails/password-reset.blade.php .deploy-release/resources/views/emails/
           cp routes/api.php .deploy-release/routes/
           cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/

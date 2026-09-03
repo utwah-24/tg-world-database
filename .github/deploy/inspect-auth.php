@@ -29,6 +29,14 @@ $columns = collect(Illuminate\Support\Facades\Schema::getColumns('users'))
         'default' => $column['default'],
         'auto_increment' => $column['auto_increment'],
     ])->values();
+$sessionColumns = collect(Illuminate\Support\Facades\Schema::getColumns('auth_sessions'))
+    ->map(fn (array $column): array => [
+        'name' => $column['name'],
+        'type' => $column['type_name'],
+        'nullable' => $column['nullable'],
+        'default' => $column['default'],
+        'auto_increment' => $column['auto_increment'],
+    ])->values();
 
 $logFile = storage_path('logs/laravel.log');
 $registrationError = null;
@@ -56,6 +64,7 @@ echo json_encode([
     ],
     'users_columns' => $columns,
     'auth_sessions_exists' => Illuminate\Support\Facades\Schema::hasTable('auth_sessions'),
+    'auth_session_columns' => $sessionColumns,
     'password_resets_exists' => Illuminate\Support\Facades\Schema::hasTable('customer_password_reset_tokens'),
     'migration_recorded' => Illuminate\Support\Facades\DB::table('migrations')
         ->where('migration', '2026_09_03_000001_create_customer_auth_tables')->exists(),

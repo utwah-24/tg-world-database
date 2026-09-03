@@ -25,6 +25,7 @@ class AuthenticationTest extends TestCase
         parent::setUp();
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
             $table->string('username');
             $table->string('normalized_username')->unique();
             $table->string('email');
@@ -66,6 +67,7 @@ class AuthenticationTest extends TestCase
         $response->assertCreated()->assertJsonPath('user.email', 'jane@example.com')->assertJsonMissing(['password' => true]);
         $user = Client::firstOrFail();
         $this->assertSame('jane.doe', $user->normalized_username);
+        $this->assertSame('Jane.Doe', $user->name);
         $this->assertSame('+255700000000', $user->phone_number);
         $this->assertTrue(Hash::check($this->registration['password'], $user->password));
         $this->assertNotSame($this->registration['password'], $user->password);

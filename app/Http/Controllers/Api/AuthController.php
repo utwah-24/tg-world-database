@@ -52,6 +52,7 @@ class AuthController extends Controller
 
         try {
             $user = DB::transaction(fn () => Client::create([
+                'name' => trim($input['username']),
                 'username' => trim($input['username']), 'normalized_username' => $input['normalized_username'],
                 'email' => $input['normalized_email'], 'normalized_email' => $input['normalized_email'],
                 'phone_number' => $input['normalized_phone'], 'normalized_phone' => $input['normalized_phone'],

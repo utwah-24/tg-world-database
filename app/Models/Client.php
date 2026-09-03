@@ -13,6 +13,7 @@ class Client extends Authenticatable
     protected $table = 'users';
 
     protected $fillable = [
+        'name',
         'username',
         'normalized_username',
         'email',
