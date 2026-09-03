@@ -27,10 +27,4 @@ if ($kernel->call('migrate', ['--force' => true]) !== 0) {
     exit;
 }
 
-if ($kernel->call('optimize:clear') !== 0) {
-    http_response_code(500);
-    echo 'CACHE_CLEAR_FAILED';
-    exit;
-}
-
 echo 'RELEASE_OK';

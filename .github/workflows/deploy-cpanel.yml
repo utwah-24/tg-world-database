@@ -188,7 +188,7 @@ jobs:
           server-dir: ${{ env.FTP_LARAVEL_DIR }}public/
           state-name: .ftp-release-runner-state.json
 
-      - name: Run migrations and clear caches
+      - name: Run database migrations
         run: |
           response="$(curl --silent --show-error --fail \
             "https://tgworld.e-saloon.online/public/run-release.php?token=$DEPLOY_RUNNER_TOKEN")"
