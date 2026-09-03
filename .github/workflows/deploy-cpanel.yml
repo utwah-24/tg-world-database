@@ -203,3 +203,40 @@ jobs:
             'https://tgworld.e-saloon.online/api/auth/me')"
           test "$status" = '401'
           grep -q 'UNAUTHENTICATED' /tmp/auth-me.json
+
+      - name: Prepare one-time customer reset
+        if: contains(github.event.head_commit.message, '[clear customers once]')
+        run: |
+          clear_token="$(openssl rand -hex 32)"
+          echo "::add-mask::$clear_token"
+          echo "CLEAR_CUSTOMERS_TOKEN=$clear_token" >> "$GITHUB_ENV"
+          mkdir -p .clear-customers
+          cp .github/deploy/clear-customers.php .clear-customers/clear-customers.php
+          CLEAR_CUSTOMERS_TOKEN="$clear_token" php -r '
+              $path = ".clear-customers/clear-customers.php";
+              $contents = file_get_contents($path);
+              file_put_contents($path, str_replace("__DEPLOY_TOKEN__", getenv("CLEAR_CUSTOMERS_TOKEN"), $contents));
+          '
+
+      - name: Upload one-time customer reset
+        if: contains(github.event.head_commit.message, '[clear customers once]')
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTPS_PORT }}
+          protocol: ftps
+          timeout: 600000
+          log-level: minimal
+          local-dir: .clear-customers/
+          server-dir: ${{ env.FTP_LARAVEL_DIR }}public/
+          state-name: .ftp-clear-customers-state.json
+
+      - name: Clear production customers
+        if: contains(github.event.head_commit.message, '[clear customers once]')
+        run: |
+          response="$(curl --silent --show-error --fail \
+            "https://tgworld.e-saloon.online/public/clear-customers.php?token=$CLEAR_CUSTOMERS_TOKEN")"
+          echo "$response"
+          echo "$response" | grep -q '"users": 0'
