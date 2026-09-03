@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (TooManyRequestsHttpException $exception, $request) {
-            if ($request->is('api/auth/*')) {
+            if ($request->is('api/auth/*') || $request->is('api/favorites*')) {
                 return response()->json(['error' => [
                     'code' => 'RATE_LIMITED',
                     'message' => 'Too many attempts. Please try again later.',
@@ -34,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
         $exceptions->render(function (RequestEntityTooLargeHttpException $exception, $request) {
-            if ($request->is('api/auth/*')) {
+            if ($request->is('api/auth/*') || $request->is('api/favorites*')) {
                 return response()->json(['error' => [
                     'code' => 'REQUEST_TOO_LARGE',
                     'message' => 'The request body is too large.',

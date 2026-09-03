@@ -7,11 +7,13 @@ use App\Traits\SyncsToRemote;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Car extends Model
 {
     use SyncsToRemote;
+
     protected $primaryKey = 'car_id';
 
     protected $fillable = [
@@ -50,14 +52,19 @@ class Car extends Model
         'car_pic' => 'array',
         'arrival_date' => 'date',
         'total_available' => 'integer',
-        'in_dar'                => 'boolean',
-        'test_drive_available'  => 'boolean',
-        'promo_set'             => 'boolean',
+        'in_dar' => 'boolean',
+        'test_drive_available' => 'boolean',
+        'promo_set' => 'boolean',
     ];
 
     public function content(): HasOne
     {
         return $this->hasOne(Content::class, 'car_id', 'car_id');
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(UserFavorite::class, 'car_id', 'car_id');
     }
 
     public function promotions(): BelongsToMany

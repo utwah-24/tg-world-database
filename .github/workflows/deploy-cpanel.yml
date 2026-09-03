@@ -123,11 +123,14 @@ jobs:
             .deploy-release/routes
 
           cp app/Http/Controllers/Api/AuthController.php .deploy-release/app/Http/Controllers/Api/
+          cp app/Http/Controllers/Api/FavoriteController.php .deploy-release/app/Http/Controllers/Api/
           cp app/Http/Middleware/AuthenticateCustomerSession.php .deploy-release/app/Http/Middleware/
           cp app/Http/Middleware/VerifyFrontendOrigin.php .deploy-release/app/Http/Middleware/
           cp app/Mail/PasswordResetMail.php .deploy-release/app/Mail/
           cp app/Models/AuthSession.php .deploy-release/app/Models/
           cp app/Models/Client.php .deploy-release/app/Models/
+          cp app/Models/Car.php .deploy-release/app/Models/
+          cp app/Models/UserFavorite.php .deploy-release/app/Models/
           cp app/Models/PasswordResetToken.php .deploy-release/app/Models/
           cp app/Services/AuthSessionService.php .deploy-release/app/Services/
           cp app/Providers/AppServiceProvider.php .deploy-release/app/Providers/
@@ -135,6 +138,7 @@ jobs:
           cp config/app.php config/auth.php config/cors.php config/session.php .deploy-release/config/
           cp database/migrations/2026_09_03_000001_create_customer_auth_tables.php .deploy-release/database/migrations/
           cp database/migrations/2026_09_03_000002_repair_production_users_schema.php .deploy-release/database/migrations/
+          cp database/migrations/2026_09_03_000003_create_user_favorites_table.php .deploy-release/database/migrations/
           cp resources/views/emails/password-reset.blade.php .deploy-release/resources/views/emails/
           cp routes/api.php .deploy-release/routes/
           cp app/Filament/Resources/CarResource.php .deploy-release/app/Filament/Resources/
@@ -196,10 +200,15 @@ jobs:
           echo "$response"
           test "$response" = 'RELEASE_OK'
 
-      - name: Verify authentication route
+      - name: Verify authenticated API routes
         run: |
           status="$(curl --silent --output /tmp/auth-me.json --write-out '%{http_code}' \
             -H 'Accept: application/json' \
             'https://tgworld.e-saloon.online/api/auth/me')"
           test "$status" = '401'
           grep -q 'UNAUTHENTICATED' /tmp/auth-me.json
+          status="$(curl --silent --output /tmp/favorites.json --write-out '%{http_code}' \
+            -H 'Accept: application/json' \
+            'https://tgworld.e-saloon.online/api/favorites')"
+          test "$status" = '401'
+          grep -q 'UNAUTHENTICATED' /tmp/favorites.json

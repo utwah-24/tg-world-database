@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CarController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\ContentController;
+use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\LogoController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PromotionController;
@@ -20,6 +21,13 @@ Route::prefix('auth')->middleware('frontend.origin')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
+});
+
+Route::prefix('favorites')->middleware(['frontend.origin', 'customer.auth'])->group(function () {
+    Route::get('/', [FavoriteController::class, 'index'])->middleware('throttle:favorites-list');
+    Route::post('/', [FavoriteController::class, 'store'])->middleware('throttle:favorites-mutate');
+    Route::delete('/{carId}', [FavoriteController::class, 'destroy'])->middleware('throttle:favorites-mutate');
+    Route::post('/{carId}/remove', [FavoriteController::class, 'destroy'])->middleware('throttle:favorites-mutate');
 });
 
 Route::get('/cars', [CarController::class, 'index']);

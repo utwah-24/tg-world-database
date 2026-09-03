@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -37,5 +38,10 @@ class Client extends Authenticatable
             'phone_verified_at' => 'datetime',
             'disabled_at' => 'datetime',
         ];
+    }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(UserFavorite::class, 'user_id');
     }
 }
